@@ -299,7 +299,7 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.16';
+const APP_VERSION = 'v2026-09-04.17';
 const KEY = 'previa_c6_v2';
 
 const Store = {
@@ -348,7 +348,7 @@ function seed(){
   NOMES_PJ.forEach((n,i)=>users.push({ id:'u'+(i+16), nome:n, login:loginDe(n), senha:'1234', tipo:'pj', papel:'vendedor', ativo:true }));
   users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
   users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'gerente', vende:true, ativo:true });
-  users.push({ id:'c1', nome:'Chefe (gerente comercial)', login:'chefe', senha:'1234', tipo:'interno', papel:'gerente', vende:false, ativo:true });
+  users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', tipo:'interno', papel:'gerente', vende:false, ativo:true });
   users.push({ id:'g1', nome:'Carlos Henrique', login:'gerente', senha:'1234', tipo:'interno', papel:'coordenador', vende:false, ativo:true });
 
   // últimos 12 dias úteis + hoje
@@ -391,7 +391,7 @@ let DB = Store.load() || seed();
 // garantia da demonstração: a Vitória sempre existe (usuário vitoria.ferreira, senha 1234)
 (function(){ { const j=DB.users.find(u=>u.login==='julio'); if(j){ j.login='julio.cesar'; salvar(); } } if(!DB.users.some(u=>u.login==='julio.cesar')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
 // perfis: Vitória = admin que envia prévia; chefe = admin; Carlos = coordenador
-(function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } if(!DB.users.some(u=>u.login==='chefe')){ DB.users.push({ id:'c1', nome:'Chefe (gerente comercial)', login:'chefe', senha:'1234', tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
+(function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } { const ch=DB.users.find(u=>u.login==='chefe'); if(ch){ ch.login='douglas.inacio'; ch.nome='Douglas Inácio'; ch.senha='teste'; ch.senhaOk=true; ch.papel='gerente'; m=true; } } if(!DB.users.some(u=>u.login==='douglas.inacio')){ DB.users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', senhaOk:true, tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
 // migração: usuários criados na versão anterior (previa_c6_v1) são preservados
 try{ const v1=JSON.parse(localStorage.getItem('previa_c6_v1')||'null'); if(v1&&v1.users){ let add=0; for(const u of v1.users){ if(!DB.users.some(x=>x.login===u.login)){ DB.users.push(u); add++; } } if(add){ salvar(); } localStorage.removeItem('previa_c6_v1'); } }catch(e){}
 const S = { user:null, tab:'enviar', dia:hoje(), mes:hoje().slice(0,7), vendSel:null, filtro:'todos', busca:'', previa:null, chartDias:10 };
@@ -467,8 +467,8 @@ function viewLogin(){
       <button class="btn primary block" type="button" id="criar">Criar usuário e entrar</button>
       <button class="btn ghost block" type="button" id="irEntrar">Já tenho usuário · entrar</button>
     </div>
-    <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b>. Toque para entrar como:</div>
-      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="julio.cesar" style="border-color:var(--ink);font-weight:600">Julio (admin)</button><button type="button" class="chip" data-quick="chefe">Chefe (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
+    <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b> (Douglas: <b>teste</b>). Toque para entrar como:</div>
+      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="julio.cesar" style="border-color:var(--ink);font-weight:600">Julio (admin)</button><button type="button" class="chip" data-quick="douglas.inacio" data-pw="teste">Douglas Inácio (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
       <div class="faint">43 vendedores cadastrados · 15 próprios · 28 Corban</div></div>
   </form></div>`;
 }
@@ -493,7 +493,7 @@ function bindLogin(){
     logar(u);
   };
   f.addEventListener('submit',e=>{ e.preventDefault(); entrar($('lg').value,$('pw').value); });
-  f.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>entrar(b.dataset.quick,'1234')));
+  f.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>entrar(b.dataset.quick,b.dataset.pw||'1234')));
   $('irCriar').onclick=()=>{ modo('criar'); if(!$('cLogin').value) $('cLogin').value=normLogin($('lg').value); $('cLogin').focus(); };
   $('irEntrar').onclick=()=>{ modo('entrar'); $('lg').focus(); };
   $('irEntrar2').onclick=()=>{ modo('entrar'); $('lg').focus(); };
@@ -556,10 +556,11 @@ function viewEnviar(){
     <div class="list" style="gap:14px">
       <div class="slotpick">${SLOTS.map(s=>{ const e=envioDe(S.user.id,dia,s.n); const lim=minutos(s.limite); const cls=[S.previa===s.n?'on':'', e?(e.atrasado?'late':'done'):''].join(' ');
         const stt = e?`${e.atrasado?'⚠ enviada às':'✓ enviada às'} ${e.hora}` : nowMin>lim?'não enviada · fora do prazo' : nowMin>lim-60?`aberta · faltam ${fmtFalta(lim-nowMin)}`:'aberta';
-        return `<button type="button" class="slot ${cls}" data-slot="${s.n}"><b>${s.rotulo}</b><small>até ${s.limite}</small><small class="st">${stt}</small></button>`; }).join('')}</div>
+        return `<button type="button" class="slot ${cls}" data-slot="${s.n}"><b>${s.rotulo}</b><small>até ${s.limite}</small><small class="st">${stt}</small>${e?`<b class="num" style="font-size:15px">${fmtBRL(e.valor)}</b><small>${e.contratos}c · ${e.seguros}s</small>`:''}</button>`; }).join('')}</div>
+      ${atual?`<div class="deadline ok" style="font-size:14px">✓ <b>${sel.rotulo} salva</b> às ${atual.hora}${atual.editadoEm?` (corrigida ${atual.editadoEm})`:''}: <b>${fmtBRL(atual.valor)}</b> · ${atual.contratos} contrato${atual.contratos===1?'':'s'} · ${atual.seguros} seguro${atual.seguros===1?'':'s'}. Fica guardada até o fim do dia e já conta no painel.</div>`:''}
       ${travada?`<div class="deadline late">🔒 Esta prévia foi enviada às ${atual.hora} e a janela de correção (2 h, até ${limiteEdicao(atual)}) já fechou. Se precisar corrigir, fale com o admin.</div>`:''}
       <div class="deadline ${atrasado?'late':'ok'}" ${travada?'style="display:none"':''}>${atrasado?`⚠ O prazo da ${sel.rotulo} (${sel.limite}) já passou. O envio será registrado como <b>atrasado</b>.`:`✓ Dentro do prazo da ${sel.rotulo}. Limite ${sel.limite} · faltam ${fmtFalta(minutos(sel.limite)-nowMin)}.`}</div>
-      <form id="fEnvio" class="list" style="gap:12px">
+      <form id="fEnvio" class="list" style="gap:12px" onsubmit="return false">
         <div class="field"><label for="valor">Valor pago nesta prévia (desde a prévia anterior)</label><input id="valor" class="big" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" value="${atual?fmtBRL(atual.valor):''}" ${gerente||travada?'disabled':''}></div>
         <div class="grid2" style="gap:12px">
           <div class="field"><label for="contratos">Contratos pagos</label><input id="contratos" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.contratos:''}" ${gerente||travada?'disabled':''}></div>
@@ -592,14 +593,8 @@ function viewEnviar(){
   </section></div>`;
 }
 function bindEnviar(){
-  document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.slot); render(); });
-  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.edit); render(); const v2=document.getElementById('valor'); v2.focus(); window.scrollTo({top:0,behavior:'smooth'}); });
-  const v=document.getElementById('valor');
-  // máscara ao vivo: digita só números, o campo mostra R$ 1.234,56 (os 2 últimos dígitos são centavos)
-  const mascara=()=>{ const d=v.value.replace(/[^0-9]/g,'').replace(/^0+(?=[0-9])/,''); v.value = d ? fmtBRL(Number(d)/100) : ''; try{ v.setSelectionRange(v.value.length,v.value.length); }catch(e){} };
-  v.addEventListener('input',mascara);
   document.getElementById('fEnvio').addEventListener('submit',e=>{
-    e.preventDefault(); if(S.user.papel==='gerente') return;
+    e.preventDefault(); if(!enviaPrevia(S.user)){ toast('Seu perfil não envia prévia. Ligue "envia prévia" em Acessos.'); return; }
     const valor=parseBRL(v.value); const contratos=Number(document.getElementById('contratos').value||0); const seguros=Number(document.getElementById('seguros').value||0);
     if(seguros>contratos && !confirm('Seguros maior que contratos. Confirma mesmo assim?')) return;
     if(valor===0 && contratos===0 && !confirm('Enviar a prévia zerada (R$ 0,00 e 0 contratos)? Ela entra como zero na soma do dia.')) return;
@@ -608,8 +603,14 @@ function bindEnviar(){
     if(ex && !podeEditar(ex)){ toast('Esta prévia já não pode ser editada (janela de 2 h).'); return; }
     const reg= ex ? { valor, contratos, seguros, editadoEm:hm(now), ts:Date.now(), ts0:ex.ts0||ex.ts } : { id:uid(), userId:S.user.id, data:hoje(), previa:sel.n, valor, contratos, seguros, hora:hm(now), atrasado, ts:Date.now(), ts0:Date.now() };
     if(ex) Object.assign(ex,reg); else DB.envios.push(reg);
-    salvar(); toast(ex?`${sel.rotulo} corrigida às ${hm(now)} ✓`:`${sel.rotulo} enviada às ${hm(now)} ${atrasado?'(atrasada)':'✓'}`); render();
+    salvar(); toast(ex?`✓ ${sel.rotulo} corrigida e salva às ${hm(now)}`:`✓ ${sel.rotulo} salva às ${hm(now)}: ${fmtBRL(valor)}${atrasado?' (fora do prazo)':''}`); render();
   });
+  document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.slot); render(); });
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.edit); render(); const v2=document.getElementById('valor'); v2.focus(); window.scrollTo({top:0,behavior:'smooth'}); });
+  const v=document.getElementById('valor');
+  // máscara ao vivo: digita só números, o campo mostra R$ 1.234,56 (os 2 últimos dígitos são centavos)
+  const mascara=()=>{ const d=v.value.replace(/[^0-9]/g,'').replace(/^0+(?=[0-9])/,''); v.value = d ? fmtBRL(Number(d)/100) : ''; try{ v.setSelectionRange(v.value.length,v.value.length); }catch(e){} };
+  v.addEventListener('input',mascara);
 }
 
 /* ----- painel geral ----- */
