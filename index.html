@@ -320,7 +320,7 @@ function seed(){
   for(const dia of dias){
     const eHoje = dia===hoje();
     for(const u of users){
-      if(u.papel!=='vendedor') continue;
+      if(u.papel!=='vendedor' || u.login==='vitoria.ferreira') continue; // a Vitória começa o dia sem envios (é ela quem apresenta)
       const r = rng(hash(dia+u.id));
       const forca = 0.6 + r()*0.9;          // "peso" do vendedor
       for(const s of SLOTS){
