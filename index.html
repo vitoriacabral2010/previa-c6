@@ -1,0 +1,784 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prévia C6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Identidade no espírito do C6 Bank: preto, branco e cinza, contraste alto.
+   Verde só para "pago / no prazo"; âmbar = atrasado; vermelho = pendente. */
+:root{
+  --bg:#F3F3F3; --surface:#FFFFFF; --surface2:#EDEDED; --line:#DCDCDC;
+  --ink:#0A0A0A; --muted:#6A6A6A; --faint:#9C9C9C;
+  --accent:#0A0A0A; --accent-ink:#FFFFFF; --accent-soft:#E6E6E6;
+  --top-bg:#0A0A0A; --top-ink:#FFFFFF; --top-muted:#A3A3A3; --top-line:#262626;
+  --pos:#1B7F4E; --pos-soft:#DFF2E7;
+  --warn:#9A6A00; --warn-soft:#FBEFC8;
+  --bad:#C0392B; --bad-soft:#F9E0DC;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 16px rgba(0,0,0,.05);
+  --r:12px;
+  --display:'Sora',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A0A0A; --surface:#161616; --surface2:#222222; --line:#2E2E2E;
+    --ink:#F2F2F2; --muted:#A3A3A3; --faint:#6E6E6E;
+    --accent:#F2F2F2; --accent-ink:#0A0A0A; --accent-soft:#2A2A2A;
+    --top-bg:#000000; --top-ink:#FFFFFF; --top-muted:#8A8A8A; --top-line:#222222;
+    --pos:#4FC98A; --pos-soft:#153524;
+    --warn:#E3B341; --warn-soft:#3A2E10;
+    --bad:#F0776B; --bad-soft:#3E1C18;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A0A0A; --surface:#161616; --surface2:#222222; --line:#2E2E2E;
+  --ink:#F2F2F2; --muted:#A3A3A3; --faint:#6E6E6E;
+  --accent:#F2F2F2; --accent-ink:#0A0A0A; --accent-soft:#2A2A2A;
+  --top-bg:#000000; --top-ink:#FFFFFF; --top-muted:#8A8A8A; --top-line:#222222;
+  --pos:#4FC98A; --pos-soft:#153524;
+  --warn:#E3B341; --warn-soft:#3A2E10;
+  --bad:#F0776B; --bad-soft:#3E1C18;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:22px;font-weight:700}
+h2{font-size:17px;font-weight:600}
+h3{font-size:14px;font-weight:600}
+p{margin:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+.num{font-family:var(--display);font-variant-numeric:tabular-nums}
+.tnum{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hide{display:none!important}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-card{width:100%;max-width:400px;background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:28px 26px;display:grid;gap:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:18px;flex:none}
+.brand small{display:block;color:var(--muted);font-size:13px}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;font-weight:500;color:var(--muted)}
+.field input,.field select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface2);outline:none;font-size:16px}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:10px;border:1px solid transparent;font-weight:600;background:var(--surface2);color:var(--ink);white-space:nowrap}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;border-color:var(--line)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.demo-hint{background:var(--surface2);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted);display:grid;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px}
+.chip:hover{border-color:var(--accent)}
+.err{color:var(--bad);font-size:13px}
+
+/* ---------- shell ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top .brand h1{font-size:17px}
+.top .spacer{flex:1}
+.status{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600}
+.status.closed{background:var(--warn-soft);color:var(--warn)}
+.status .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.who{font-size:13px;color:var(--muted);text-align:right;line-height:1.25}
+.who b{display:block;color:var(--ink);font-weight:600}
+.tabs{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto}
+.tab{padding:10px 14px;border:0;background:none;border-bottom:2px solid transparent;color:var(--muted);font-weight:500;white-space:nowrap}
+.tab.on{color:var(--ink);border-bottom-color:var(--accent)}
+.main{max-width:1180px;margin:0 auto;padding:18px 16px 60px;display:grid;gap:16px}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:18px}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- kpis ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:820px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:grid;gap:4px}
+.kpi .v{font-family:var(--display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.accent .v{color:var(--accent)}
+
+/* ---------- segmented ---------- */
+.seg{display:inline-flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toolbar input[type=date],.toolbar input[type=search]{padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px;outline:none}
+.toolbar input:focus{border-color:var(--accent)}
+
+/* ---------- envio ---------- */
+.slotpick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface2);text-align:left;display:grid;gap:2px}
+.slot b{font-family:var(--display);font-size:14px}
+.slot small{color:var(--muted);font-size:12px}
+.slot.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent-soft)}
+.slot.done small.st{color:var(--accent);font-weight:600}
+.slot.late small.st{color:var(--warn);font-weight:600}
+.big{font-family:var(--display);font-size:26px!important;font-weight:600;padding:14px 16px!important}
+.deadline{display:block;padding:10px 12px;border-radius:10px;background:var(--surface2);font-size:13px;line-height:1.4}
+.deadline.late{background:var(--warn-soft);color:var(--warn)}
+.deadline.ok{background:var(--accent-soft);color:var(--accent)}
+.mine{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.mine{grid-template-columns:1fr}.slotpick{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
+.mini{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:4px}
+.mini .v{font-family:var(--display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.late{background:var(--warn-soft);color:var(--warn)}
+.pill.miss{background:var(--bad-soft);color:var(--bad)}
+.pill.neutral{background:var(--surface2);color:var(--muted)}
+.pill.pj{background:var(--surface2);color:var(--muted)}
+.pill.int{background:var(--surface2);color:var(--ink)}
+
+/* ---------- table ---------- */
+.tablewrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:760px;font-size:13.5px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface2);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);z-index:2}
+th.r,td.r{text-align:right}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--surface2)}
+td.name,th.name{position:sticky;left:0;background:var(--surface);z-index:1;min-width:190px}
+th.name{background:var(--surface2);z-index:3}
+tbody tr:hover td.name{background:var(--surface2)}
+td.name b{font-weight:600}
+td .sub{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+td .val{font-family:var(--display);font-weight:600;font-variant-numeric:tabular-nums}
+td.miss .val{color:var(--bad)}
+tr.pend td.name{box-shadow:inset 3px 0 0 var(--bad)}
+tr.me td{background:var(--accent-soft)}
+tfoot td{background:var(--surface2);font-weight:600;border-top:1px solid var(--line)}
+.rank{width:24px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+/* ---------- chart ---------- */
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .lbl{fill:var(--muted);font-size:11px;font-family:var(--body)}
+.chart .vl{fill:var(--ink);font-size:11px;font-family:var(--display);font-weight:600}
+.chart .bar-int{fill:var(--accent)}
+.chart .bar-pj{fill:var(--accent);opacity:.45}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:5px;vertical-align:-1px}
+.legend i.pj{opacity:.45}
+.bars{display:grid;gap:8px}
+.bar-row{display:grid;grid-template-columns:90px 1fr 60px;gap:10px;align-items:center;font-size:13px}
+.bar-track{height:10px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.bar-fill{height:100%;background:var(--accent);border-radius:999px}
+
+/* ---------- misc ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:500;box-shadow:var(--shadow);z-index:50;opacity:0;transition:opacity .2s}
+.toast.show{opacity:1}
+.list{display:grid;gap:6px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+.row:last-child{border-bottom:0}
+.note{font-size:12.5px;color:var(--muted)}
+.wa{white-space:pre-wrap;font-family:var(--body);font-size:13px;background:var(--surface2);padding:12px;border-radius:10px;max-height:260px;overflow:auto}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ---------- identidade C6: cabeçalho preto, estados semânticos ---------- */
+.top{background:var(--top-bg);color:var(--top-ink);border-bottom:1px solid var(--top-line)}
+.top .brand h1{color:var(--top-ink);letter-spacing:-.01em}
+.top .mark{background:var(--top-ink);color:var(--top-bg)}
+.top .who{color:var(--top-muted)} .top .who b{color:var(--top-ink)}
+.top .btn.ghost{color:var(--top-ink);border-color:var(--top-line)}
+.top .status{background:var(--top-line);color:var(--top-ink)} .top .status .dot{background:var(--pos)}
+.top .status.closed{color:var(--warn)} .top .status.closed .dot{background:var(--warn)}
+.tab{color:var(--top-muted)} .tab.on{color:var(--top-ink);border-bottom-color:var(--top-ink)}
+.mark{border-radius:8px;letter-spacing:-.04em;font-size:15px}
+.login-card .status{background:var(--pos-soft);color:var(--pos)} .login-card .status.closed{background:var(--warn-soft);color:var(--warn)}
+.field input:focus,.field select:focus{box-shadow:0 0 0 3px var(--accent-soft)}
+.pill.ok{background:var(--pos-soft);color:var(--pos)}
+.slot.on{border-color:var(--ink);background:var(--surface);box-shadow:0 0 0 2px var(--ink)}
+.slot.done small.st{color:var(--pos)}
+.deadline.ok{background:var(--pos-soft);color:var(--pos)}
+.kpi.accent .v{color:var(--ink)}
+.kpi{border:1px solid var(--line);box-shadow:none}
+.card{border:1px solid var(--line);box-shadow:none}
+.login-card{border:1px solid var(--line);box-shadow:var(--shadow)}
+.chart .bar-int{fill:var(--ink)} .chart .bar-pj{fill:var(--ink);opacity:.35}
+.legend i{background:var(--ink)} .legend i.pj{opacity:.35}
+.bar-fill{background:var(--pos)}
+tr.me td{background:var(--surface2)}
+.seg button.on{background:var(--ink);color:var(--bg);box-shadow:none}
+.chip:hover{border-color:var(--ink)}
+.toast{background:var(--ink);color:var(--bg)}
+/* somatório */
+.total-box{background:var(--surface);border:1px solid var(--line)}
+.total-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;align-items:end}
+@media(max-width:640px){.total-grid{grid-template-columns:1fr 1fr 1fr}}
+.tv{font-family:var(--display);font-weight:700;font-size:30px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.tv.accent{color:var(--pos)}
+@media(max-width:640px){.tv{font-size:22px}}
+.total-slots{margin-top:12px;border-top:1px solid var(--line)}
+/* gerência */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.cmp{grid-template-columns:1fr}}
+.cmp .box{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:grid;gap:6px}
+.cmp .box .big{font-size:22px!important;padding:0!important}
+.ritmo{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ritmo .step{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px}
+.ritmo .step .v{font-family:var(--display);font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.ritmo .step .d{font-size:12px;color:var(--muted)}
+.attn td{color:var(--bad)}
+/* celular: nada estoura a largura da tela; tabelas rolam dentro do próprio quadro */
+html,body{max-width:100%;overflow-x:hidden}
+.main>*,.grid2>*,.card,.section,.kpis>*{min-width:0}
+.tablewrap{max-width:100%}
+@media(max-width:640px){
+  .top-in{gap:8px 12px} .top .brand h1{font-size:16px} .top .status{font-size:12px;padding:5px 10px} .who{font-size:12px}
+  .toolbar{gap:8px} .toolbar input[type=date],.toolbar input[type=month],.toolbar input[type=search]{flex:1 1 140px;min-width:0}
+  .seg{flex-wrap:wrap} .toolbar .btn{width:100%}
+  .kpi .v{font-size:clamp(15px,5.4vw,20px);overflow-wrap:anywhere} .kpi{padding:12px} .card{padding:14px} .card-h{margin-bottom:8px}
+  .ritmo{grid-template-columns:1fr}
+  table{min-width:640px}
+}
+</style>
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   Prévia C6 — prévia diária de pagamentos da equipe de vendas
+   Arquivo único, sem servidor. Os dados ficam no navegador (localStorage)
+   nesta versão de demonstração. Para uso real com 43 pessoas, troque o
+   objeto Store abaixo por chamadas ao Supabase (ver README.md).
+   ===================================================================== */
+
+const SLOTS = [
+  { n:1, rotulo:'1ª prévia', limite:'10:40' },
+  { n:2, rotulo:'2ª prévia', limite:'14:40' },
+  { n:3, rotulo:'3ª prévia', limite:'17:10' },
+];
+const KEY = 'previa_c6_v2';
+
+const Store = {
+  load(){ try{ const s = localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){} return null; },
+  save(db){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} },
+  session(){ try{ return sessionStorage.getItem(KEY+'_user'); }catch(e){ return null; } },
+  setSession(id){ try{ id ? sessionStorage.setItem(KEY+'_user', id) : sessionStorage.removeItem(KEY+'_user'); }catch(e){} },
+};
+
+/* ---------- utilidades ---------- */
+const fmtBRL = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtBRL0 = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const pad = n => String(n).padStart(2,'0');
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const hoje = () => isoDate(new Date());
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const minutos = s => { const [h,m]=s.split(':').map(Number); return h*60+m; };
+const brDate = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+const brShort = iso => { const [,m,d]=iso.split('-'); return `${d}/${m}`; };
+const diaSemana = iso => ['dom','seg','ter','qua','qui','sex','sáb'][new Date(iso+'T12:00:00').getDay()];
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const semAcento = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const chave = s => semAcento(s).toLowerCase().trim().replace(/\s+/g,' ');
+const parseBRL = s => { s=String(s).replace(/[R$\s.]/g,'').replace(',','.'); const n=parseFloat(s); return isNaN(n)?0:n; };
+const uid = () => Math.random().toString(36).slice(2,10);
+
+function slotAtual(now){
+  const m = now.getHours()*60+now.getMinutes();
+  for(const s of SLOTS) if(m <= minutos(s.limite)) return { slot:s, encerrado:false, falta: minutos(s.limite)-m };
+  return { slot:SLOTS[2], encerrado:true, falta:0 };
+}
+function fmtFalta(min){ if(min<60) return `${min} min`; return `${Math.floor(min/60)}h${pad(min%60)}`; }
+
+/* ---------- dados de demonstração ---------- */
+const NOMES_INT = ['Ana Souza','Bruna Lima','Carla Mendes','Diego Ramos','Eduarda Nunes','Felipe Costa','Gabriela Rocha','Henrique Alves','Isabela Freitas','João Pedro Silva','Larissa Moraes','Marcos Vieira','Natália Campos','Otávio Pires','Priscila Duarte'];
+const NOMES_PJ = ['Rafael Teixeira','Sabrina Lopes','Thiago Barbosa','Vanessa Cardoso','William Santos','Aline Ferreira','Bianca Correia','Caio Martins','Daniela Ribeiro','Everton Melo','Fernanda Araújo','Gustavo Andrade','Helena Castro','Igor Fonseca','Juliana Batista','Kauã Monteiro','Letícia Prado','Mateus Guimarães','Nicole Azevedo','Paulo Cunha','Renata Oliveira','Samuel Borges','Tatiane Xavier','Vitor Macedo','Yasmin Reis','Lucas Farias','Mariana Tavares','Rodrigo Brito'];
+
+function loginDe(nome){ const p=semAcento(nome).toLowerCase().split(' '); return p[0]+'.'+p[p.length-1]; }
+function rng(seed){ let a=seed>>>0; return ()=>{ a+=0x6D2B79F5; let t=a; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; }; }
+function hash(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+
+function seed(){
+  const users = [];
+  NOMES_INT.forEach((n,i)=>users.push({ id:'u'+(i+1), nome:n, login:loginDe(n), senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }));
+  NOMES_PJ.forEach((n,i)=>users.push({ id:'u'+(i+16), nome:n, login:loginDe(n), senha:'1234', tipo:'pj', papel:'vendedor', ativo:true }));
+  users.push({ id:'j1', nome:'Julio Cesar', login:'julio', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
+  users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true });
+  users.push({ id:'g1', nome:'Carlos Henrique', login:'gerente', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
+
+  // últimos 12 dias úteis + hoje
+  const dias=[]; const d=new Date(); d.setHours(12,0,0,0);
+  while(dias.length<13){ const wd=d.getDay(); if(wd!==0&&wd!==6) dias.unshift(isoDate(d)); d.setDate(d.getDate()-1); }
+  const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
+  const envios=[];
+  for(const dia of dias){
+    const eHoje = dia===hoje();
+    for(const u of users){
+      if(u.papel!=='vendedor') continue;
+      const r = rng(hash(dia+u.id));
+      const forca = 0.6 + r()*0.9;          // "peso" do vendedor
+      for(const s of SLOTS){
+        const lim=minutos(s.limite);
+        // cada prÃ©via = o que foi pago naquele perÃ­odo (o total do dia Ã© a soma das 3)
+        const novosC = Math.floor(r()*3*forca + (s.n===1?0.6:0.3));
+        const contratos = novosC;
+        const seguros = Math.min(novosC, Math.floor(r()*2.2));
+        const valor = novosC * (1800 + r()*2600) * forca;
+        if(eHoje && lim > nowMin){ // prévia ainda aberta hoje: parte já enviou
+          if(lim - nowMin > 90 || r() > 0.55) continue;
+        }
+        if(r() < 0.07) continue;   // esqueceu de enviar
+        const atrasado = r() < 0.12;
+        const minEnvio = atrasado ? lim + 3 + Math.floor(r()*40) : lim - 5 - Math.floor(r()*70);
+        if(eHoje && minEnvio > nowMin) continue;
+        envios.push({ id:uid(), userId:u.id, data:dia, previa:s.n, valor:Math.round(valor*100)/100, contratos, seguros,
+          hora:`${pad(Math.floor(minEnvio/60))}:${pad(minEnvio%60)}`, atrasado, ts: new Date(dia+'T'+pad(Math.floor(minEnvio/60))+':'+pad(minEnvio%60)+':00').getTime() });
+      }
+    }
+  }
+  const db={ users, envios, criadoEm:Date.now() };
+  Store.save(db);
+  return db;
+}
+
+/* ---------- estado ---------- */
+let DB = Store.load() || seed();
+// garantia da demonstração: a Vitória sempre existe (usuário vitoria.ferreira, senha 1234)
+(function(){ if(!DB.users.some(u=>u.login==='julio')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
+// migração: usuários criados na versão anterior (previa_c6_v1) são preservados
+try{ const v1=JSON.parse(localStorage.getItem('previa_c6_v1')||'null'); if(v1&&v1.users){ let add=0; for(const u of v1.users){ if(!DB.users.some(x=>x.login===u.login)){ DB.users.push(u); add++; } } if(add){ salvar(); } localStorage.removeItem('previa_c6_v1'); } }catch(e){}
+const S = { user:null, tab:'enviar', dia:hoje(), mes:hoje().slice(0,7), vendSel:null, filtro:'todos', busca:'', previa:null, chartDias:10 };
+{ const sid=Store.session(); if(sid) S.user = DB.users.find(u=>u.id===sid) || null; }
+
+function salvar(){ Store.save(DB); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
+
+/* ---------- consultas ---------- */
+const vendedores = () => DB.users.filter(u=>u.papel==='vendedor'&&u.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+const enviosDia = dia => DB.envios.filter(e=>e.data===dia);
+function envioDe(uid_, dia, n){ return DB.envios.find(e=>e.userId===uid_&&e.data===dia&&e.previa===n) || null; }
+// TOTAL do dia de um vendedor = soma das prÃ©vias enviadas (valor, contratos, seguros); previa/hora = Ãºltima enviada
+function totalDe(uid_, dia){ const es=DB.envios.filter(e=>e.userId===uid_&&e.data===dia).sort((a,b)=>a.previa-b.previa); if(!es.length) return null; const u=es[es.length-1]; return { valor:es.reduce((a,e)=>a+e.valor,0), contratos:es.reduce((a,e)=>a+e.contratos,0), seguros:es.reduce((a,e)=>a+e.seguros,0), n:es.length, previa:u.previa, hora:u.hora, atrasado:u.atrasado }; }
+const ultimoDe = totalDe;
+function slotRef(dia){ // qual prévia é "a da vez" para o dia consultado
+  if(dia===hoje()) return slotAtual(new Date()).slot;
+  return SLOTS[2];
+}
+function resumoDia(dia, lista){
+  let valor=0,contratos=0,seguros=0,enviaram=0,noPrazo=0; const ref=slotRef(dia);
+  const faltam=[];
+  for(const u of lista){
+    const ult=ultimoDe(u.id,dia); if(ult){ valor+=ult.valor; contratos+=ult.contratos; seguros+=ult.seguros; }
+    const e=envioDe(u.id,dia,ref.n); if(e){ enviaram++; if(!e.atrasado) noPrazo++; } else faltam.push(u);
+  }
+  return { valor,contratos,seguros,enviaram,noPrazo,faltam,ref,total:lista.length };
+}
+function diasUteisAte(dia, n){ const out=[]; const d=new Date(dia+'T12:00:00'); while(out.length<n){ const wd=d.getDay(); if(wd!==0&&wd!==6) out.unshift(isoDate(d)); d.setDate(d.getDate()-1); } return out; }
+
+/* ---------- render ---------- */
+const app = document.getElementById('app');
+function render(){
+  if(!S.user){ app.innerHTML = viewLogin(); bindLogin(); return; }
+  if(S.tab==='gerencia' && S.user.papel!=='gerente') S.tab='painel';
+  app.innerHTML = viewShell() + `<div class="main">${ S.tab==='enviar'?viewEnviar(): S.tab==='painel'?viewPainel(): S.tab==='mes'?viewMes(): viewGerencia() }</div>`;
+  bindShell();
+  if(S.tab==='enviar') bindEnviar(); else if(S.tab==='painel') bindPainel(); else if(S.tab==='mes') bindMes(); else bindGerencia();
+}
+
+/* ----- login ----- */
+function viewLogin(){
+  const st=slotAtual(new Date());
+  return `<div class="login"><form class="login-card" id="loginForm">
+    <div class="brand"><div class="mark">C6</div><div><h1>Prévia C6</h1><small>Prévia diária de pagamentos · equipe comercial</small></div></div>
+    <div class="status ${st.encerrado?'closed':''}"><span class="dot"></span>${st.encerrado?'Prévias de hoje encerradas (17:10)':`${st.slot.rotulo} aberta · até ${st.slot.limite} · faltam ${fmtFalta(st.falta)}`}</div>
+    <div id="modoEntrar" class="list" style="gap:18px">
+      <div class="field"><label for="lg">Usuário</label><input id="lg" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ex.: vitoria.ferreira" required></div>
+      <div class="field"><label for="pw">Senha</label><input id="pw" type="password" autocomplete="current-password" required></div>
+      <div class="err hide" id="lgErr"></div>
+      <button class="btn primary block" type="submit">Entrar</button>
+      <button class="btn ghost block" type="button" id="irCriar">Primeiro acesso? Criar meu usuário</button>
+      <button class="btn ghost block" type="button" id="irSenha" style="border:0;color:var(--muted);font-weight:500">Esqueci a senha · redefinir agora</button>
+    </div>
+    <div id="modoSenha" class="list hide" style="gap:14px">
+      <div class="eyebrow">Redefinir senha</div>
+      <div class="field"><label for="sLogin">Usuário</label><input id="sLogin" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ex.: vitoria.ferreira"></div>
+      <div class="field"><label for="sPw">Nova senha</label><input id="sPw" type="password" autocomplete="new-password" placeholder="mínimo 4 caracteres"></div>
+      <div class="err hide" id="sErr"></div>
+      <button class="btn primary block" type="button" id="redefinir">Salvar nova senha e entrar</button>
+      <button class="btn ghost block" type="button" id="irEntrar2">Voltar</button>
+    </div>
+    <div class="hide">
+    </div>
+    <div id="modoCriar" class="list hide" style="gap:14px">
+      <div class="eyebrow">Primeiro acesso · criar usuário</div>
+      <div class="field"><label for="cLogin">Usuário (você vai entrar sempre com ele)</label><input id="cLogin" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ex.: vitoria.ferreira"></div>
+      <div class="field"><label for="cNome">Seu nome completo</label><input id="cNome" placeholder="ex.: Vitória Ferreira" autocomplete="name"></div>
+      <div class="field"><label for="cTipo">Você é</label><select id="cTipo"><option value="interno">Vendedor(a) próprio (interno)</option><option value="pj">Vendedor(a) Corban (terceirizada)</option></select></div>
+      <div class="field"><label for="cPw">Senha</label><input id="cPw" type="password" autocomplete="new-password" placeholder="mínimo 4 caracteres"></div>
+      <div class="field"><label for="cPw2">Repita a senha</label><input id="cPw2" type="password" autocomplete="new-password"></div>
+      <div class="err hide" id="cErr"></div>
+      <button class="btn primary block" type="button" id="criar">Criar usuário e entrar</button>
+      <button class="btn ghost block" type="button" id="irEntrar">Já tenho usuário · entrar</button>
+    </div>
+    <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b>. Toque para entrar como:</div>
+      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (própria)</button><button type="button" class="chip" data-quick="julio" style="border-color:var(--ink);font-weight:600">Julio (gerente)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (gerente)</button></div>
+      <div class="faint">43 vendedores cadastrados · 15 próprios · 28 Corban</div></div>
+  </form></div>`;
+}
+function normLogin(s){ return semAcento(String(s||'')).toLowerCase().trim().replace(/\s+/g,'.').replace(/[^a-z0-9._-]/g,''); }
+function acharUsuario(txt){
+  const k=normLogin(txt); if(!k) return null;
+  return DB.users.find(u=>normLogin(u.login)===k) || DB.users.find(u=>chave(u.nome)===chave(txt)) || null;
+}
+function logar(u){ S.user=u; Store.setSession(u.id); S.tab = u.papel==='gerente' ? 'painel' : 'enviar'; render(); }
+function bindLogin(){
+  const f=document.getElementById('loginForm'); const $=id=>document.getElementById(id);
+  const erro=(id,msg)=>{ const el=$(id); el.textContent=msg; el.classList.toggle('hide',!msg); };
+  const modo=m=>{ $('modoEntrar').classList.toggle('hide',m!=='entrar'); $('modoCriar').classList.toggle('hide',m!=='criar'); $('modoSenha').classList.toggle('hide',m!=='senha'); };
+  const entrar=(lg,pw)=>{
+    const u=acharUsuario(lg);
+    if(!u){ erro('lgErr',`Usuário "${normLogin(lg)||lg}" não existe. Se é seu primeiro acesso, crie seu usuário abaixo.`); $('cLogin').value=normLogin(lg); return; }
+    if(u.ativo===false){ erro('lgErr','Este usuário está desativado. Fale com o gerente.'); return; }
+    if(u.senha!==pw){ erro('lgErr','Senha incorreta para o usuário '+u.login+'.'); return; }
+    logar(u);
+  };
+  f.addEventListener('submit',e=>{ e.preventDefault(); entrar($('lg').value,$('pw').value); });
+  f.querySelectorAll('[data-quick]').forEach(b=>b.addEventListener('click',()=>entrar(b.dataset.quick,'1234')));
+  $('irCriar').onclick=()=>{ modo('criar'); if(!$('cLogin').value) $('cLogin').value=normLogin($('lg').value); $('cLogin').focus(); };
+  $('irEntrar').onclick=()=>{ modo('entrar'); $('lg').focus(); };
+  $('irEntrar2').onclick=()=>{ modo('entrar'); $('lg').focus(); };
+  $('irSenha').onclick=()=>{ modo('senha'); $('sLogin').value=normLogin($('lg').value); ($('sLogin').value?$('sPw'):$('sLogin')).focus(); };
+  $('redefinir').onclick=()=>{ const u=acharUsuario($('sLogin').value); const pw=$('sPw').value; if(!u) return erro('sErr',`Usuário "${normLogin($('sLogin').value)}" não existe. Crie seu usuário no primeiro acesso.`); if(pw.length<4) return erro('sErr','A senha precisa ter pelo menos 4 caracteres.'); u.senha=pw; u.senhaOk=true; u.ativo=true; salvar(); toast('Senha redefinida.'); logar(u); };
+  $('cNome').addEventListener('input',()=>{ if(!$('cLogin').dataset.tocado) $('cLogin').value=normLogin($('cNome').value.trim().split(/\s+/).filter(Boolean).filter((p,i,a)=>i===0||i===a.length-1).join('.')); });
+  $('cLogin').addEventListener('input',()=>{ $('cLogin').dataset.tocado='1'; });
+  $('cLogin').addEventListener('blur',()=>{ $('cLogin').value=normLogin($('cLogin').value); });
+  $('criar').onclick=()=>{
+    const login=normLogin($('cLogin').value);
+    const nome=$('cNome').value.replace(/[._\-]+/g,' ').trim().replace(/\s+/g,' ').split(' ').map(p=>p.charAt(0).toUpperCase()+p.slice(1).toLowerCase()).join(' ');
+    const pw=$('cPw').value; const pw2=$('cPw2').value;
+    if(login.length<3) return erro('cErr','Escolha um usuário (ex.: vitoria.ferreira).');
+    if(nome.split(' ').length<2) return erro('cErr','Digite nome e sobrenome (ex.: Vitória Ferreira).');
+    if(pw.length<4) return erro('cErr','A senha precisa ter pelo menos 4 caracteres.');
+    if(pw!==pw2) return erro('cErr','As senhas não conferem.');
+    const ja=DB.users.find(u=>normLogin(u.login)===login);
+    if(ja) return erro('cErr',`O usuário "${login}" já existe. Toque em "Já tenho usuário" e entre com a sua senha.`);
+    const u={ id:uid(), nome, login, senha:pw, senhaOk:true, tipo:$('cTipo').value, papel:'vendedor', ativo:true };
+    DB.users.push(u); salvar(); toast(`Usuário ${login} criado. Bem-vinda, ${nome.split(' ')[0]}!`); logar(u);
+  };
+}
+
+/* ----- shell ----- */
+function viewShell(){
+  const st=slotAtual(new Date()); const d=new Date();
+  const tabs=[['enviar','Enviar prévia'],['painel','Painel geral'],['mes','Mês']]; if(S.user.papel==='gerente') tabs.push(['gerencia','Gerência']);
+  return `<header class="top"><div class="top-in">
+    <div class="brand"><div class="mark">C6</div><div><h1>Prévia C6</h1></div></div>
+    <div class="status ${st.encerrado?'closed':''}"><span class="dot"></span><span>${st.encerrado?'Prévias de hoje encerradas':`${st.slot.rotulo} · até ${st.slot.limite} · faltam ${fmtFalta(st.falta)}`}</span></div>
+    <div class="spacer"></div>
+    <div class="who"><b>${esc(S.user.nome)}</b>${S.user.papel==='gerente'?'Gerente':S.user.tipo==='pj'?'Vendedor Corban':'Vendedor próprio'} · ${diaSemana(hoje())} ${brShort(hoje())} ${hm(d)}</div>
+    <button class="btn ghost sm" id="sair">Sair</button>
+  </div>
+  <nav class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</nav></header>`;
+}
+function bindShell(){
+  document.getElementById('sair').onclick=()=>{ S.user=null; Store.setSession(null); render(); };
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; render(); });
+}
+
+/* ----- enviar ----- */
+function viewEnviar(){
+  const now=new Date(); const st=slotAtual(now); const dia=hoje();
+  if(!S.previa) S.previa=st.slot.n;
+  const meus = SLOTS.map(s=>({s, e:envioDe(S.user.id,dia,s.n)}));
+  const sel=SLOTS[S.previa-1]; const atual=envioDe(S.user.id,dia,sel.n);
+  const nowMin=now.getHours()*60+now.getMinutes(); const atrasado = nowMin>minutos(sel.limite);
+  const anterior = null;
+  const gerente = S.user.papel==='gerente';
+  return `${gerente?`<div class="card"><p class="muted">Você está logado como gerente. O envio de prévia é feito pelos vendedores; use o <b>Painel geral</b> e a <b>Gerência</b>.</p></div>`:''}
+  <div class="grid2">
+  <section class="card">
+    <div class="card-h"><div><div class="eyebrow">Hoje · ${diaSemana(dia)} ${brDate(dia)}</div><h2>Enviar prévia de pagamentos</h2></div></div>
+    <div class="list" style="gap:14px">
+      <div class="slotpick">${SLOTS.map(s=>{ const e=envioDe(S.user.id,dia,s.n); const lim=minutos(s.limite); const cls=[S.previa===s.n?'on':'', e?(e.atrasado?'late':'done'):''].join(' ');
+        const stt = e?`${e.atrasado?'⚠ enviada às':'✓ enviada às'} ${e.hora}` : nowMin>lim?'não enviada · fora do prazo' : nowMin>lim-60?`aberta · faltam ${fmtFalta(lim-nowMin)}`:'aberta';
+        return `<button type="button" class="slot ${cls}" data-slot="${s.n}"><b>${s.rotulo}</b><small>até ${s.limite}</small><small class="st">${stt}</small></button>`; }).join('')}</div>
+      <div class="deadline ${atrasado?'late':'ok'}">${atrasado?`⚠ O prazo da ${sel.rotulo} (${sel.limite}) já passou. O envio será registrado como <b>atrasado</b>.`:`✓ Dentro do prazo da ${sel.rotulo}. Limite ${sel.limite} · faltam ${fmtFalta(minutos(sel.limite)-nowMin)}.`}</div>
+      <form id="fEnvio" class="list" style="gap:12px">
+        <div class="field"><label for="valor">Valor pago nesta prévia (desde a prévia anterior)</label><input id="valor" class="big" inputmode="decimal" placeholder="R$ 0,00" value="${atual?fmtBRL(atual.valor):''}" ${gerente?'disabled':''}></div>
+        <div class="grid2" style="gap:12px">
+          <div class="field"><label for="contratos">Contratos pagos</label><input id="contratos" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.contratos:''}" ${gerente?'disabled':''}></div>
+          <div class="field"><label for="seguros">Seguros pagos</label><input id="seguros" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.seguros:''}" ${gerente?'disabled':''}></div>
+        </div>
+        <div class="note">Informe só o que foi pago neste período. O total do dia soma as 3 prévias. O horário é registrado automaticamente.</div>
+        <button class="btn primary block" type="submit" ${gerente?'disabled':''}>${atual?`Atualizar ${sel.rotulo}`:`Enviar ${sel.rotulo}`} · ${hm(now)}</button>
+      </form>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card-h"><h2>Seus envios de hoje</h2><span class="muted">${meus.filter(x=>x.e).length} de 3</span></div>
+    <div class="mine">${meus.map(({s,e})=>`<div class="mini"><div class="eyebrow">${s.rotulo} · ${s.limite}</div>
+      ${e?`<div class="v">${fmtBRL(e.valor)}</div><div class="muted" style="font-size:13px">${e.contratos} contrato${e.contratos===1?'':'s'} · ${e.seguros} seguro${e.seguros===1?'':'s'}</div><div><span class="pill ${e.atrasado?'late':'ok'}">${e.atrasado?'⚠ atrasada':'✓ no prazo'} · ${e.hora}</span></div>`
+         :`<div class="v faint">—</div><div><span class="pill ${nowMin>minutos(s.limite)?'miss':'neutral'}">${nowMin>minutos(s.limite)?'não enviada':'aguardando'}</span></div>`}</div>`).join('')}</div>
+    ${(()=>{ const u=ultimoDe(S.user.id,dia); return `<div class="total-box" style="margin-top:14px;padding:14px;border-radius:12px"><div class="eyebrow">Seu total produzido hoje</div>
+      <div class="total-grid"><div><div class="tv accent">${u?fmtBRL(u.valor):'R$ 0,00'}</div><div class="note">valor pago</div></div><div><div class="tv">${u?u.contratos:0}</div><div class="note">contratos</div></div><div><div class="tv">${u?u.seguros:0}</div><div class="note">seguros</div></div></div>
+      <p class="note">${u?`Soma das ${u.n} prévia${u.n===1?'':'s'} enviada${u.n===1?'':'s'} hoje (última: ${SLOTS[u.previa-1].rotulo} às ${u.hora}).`:'Nenhuma prévia enviada ainda hoje.'}</p></div>`; })()}
+    <div style="margin-top:16px" class="list">
+      <div class="eyebrow">Como funciona</div>
+      <div class="row"><span>1ª prévia</span><span class="muted">enviar até <b class="tnum">10:40</b></span></div>
+      <div class="row"><span>2ª prévia</span><span class="muted">enviar até <b class="tnum">14:40</b></span></div>
+      <div class="row"><span>3ª prévia</span><span class="muted">enviar até <b class="tnum">17:10</b></span></div>
+      <p class="note">Cada prévia é o que foi pago <b>naquele período</b>; o <b>total do dia</b> é a soma das 3 prévias, em todas as telas. Envio depois do limite fica marcado como atrasado no painel de todos.</p>
+    </div>
+  </section></div>`;
+}
+function bindEnviar(){
+  document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.slot); render(); });
+  const v=document.getElementById('valor');
+  v.addEventListener('blur',()=>{ const n=parseBRL(v.value); v.value = n?fmtBRL(n):''; });
+  v.addEventListener('focus',()=>{ if(v.value) v.value=String(parseBRL(v.value)).replace('.',','); });
+  document.getElementById('fEnvio').addEventListener('submit',e=>{
+    e.preventDefault(); if(S.user.papel==='gerente') return;
+    const valor=parseBRL(v.value); const contratos=Number(document.getElementById('contratos').value||0); const seguros=Number(document.getElementById('seguros').value||0);
+    if(seguros>contratos && !confirm('Seguros maior que contratos. Confirma mesmo assim?')) return;
+    if(valor===0 && contratos===0 && !confirm('Enviar a prévia zerada (R$ 0,00 e 0 contratos)? Ela entra como zero na soma do dia.')) return;
+    const now=new Date(); const sel=SLOTS[S.previa-1]; const atrasado=(now.getHours()*60+now.getMinutes())>minutos(sel.limite);
+    const ex=envioDe(S.user.id,hoje(),sel.n);
+    const reg={ id:ex?ex.id:uid(), userId:S.user.id, data:hoje(), previa:sel.n, valor, contratos, seguros, hora:hm(now), atrasado, ts:Date.now() };
+    if(ex) Object.assign(ex,reg); else DB.envios.push(reg);
+    salvar(); toast(`${sel.rotulo} ${ex?'atualizada':'enviada'} às ${hm(now)} ${atrasado?'(atrasada)':'✓'}`); render();
+  });
+}
+
+/* ----- painel geral ----- */
+function listaFiltrada(){
+  let l=vendedores(); if(S.filtro!=='todos') l=l.filter(u=>u.tipo===S.filtro);
+  if(S.busca) { const q=semAcento(S.busca).toLowerCase(); l=l.filter(u=>semAcento(u.nome).toLowerCase().includes(q)); }
+  return l;
+}
+function cellEnvio(e, s, dia){
+  if(!e){ const aberto = dia===hoje() && (new Date().getHours()*60+new Date().getMinutes())<=minutos(s.limite); return `<td class="r ${aberto?'':'miss'}"><span class="val ${aberto?'faint':''}">${aberto?'—':'—'}</span><span class="sub">${aberto?'aguardando':'não enviou'}</span></td>`; }
+  return `<td class="r"><span class="val">${fmtBRL(e.valor)}</span><span class="sub">${e.contratos}c · ${e.seguros}s · <span class="pill ${e.atrasado?'late':'ok'}" style="padding:0 5px">${e.hora}</span></span></td>`;
+}
+function viewPainel(){
+  const dia=S.dia; const lista=listaFiltrada(); const r=resumoDia(dia,lista);
+  const linhas = lista.map(u=>({u, ult:ultimoDe(u.id,dia), es:SLOTS.map(s=>envioDe(u.id,dia,s.n))})).sort((a,b)=>(b.ult?b.ult.valor:-1)-(a.ult?a.ult.valor:-1));
+  const eHoje=dia===hoje();
+  const porSlot=SLOTS.map(s=>{ let v=0,c=0,sg=0,n=0; for(const u of lista){ const e=envioDe(u.id,dia,s.n); if(e){v+=e.valor;c+=e.contratos;sg+=e.seguros;n++;} } return {v,c,sg,n}; });
+  return `<div class="toolbar">
+      <input type="date" id="dia" value="${dia}" max="${hoje()}">
+      <div class="seg" id="filtro">${[['todos','Todos'],['interno','Próprios'],['pj','Corban']].map(([k,l])=>`<button class="${S.filtro===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>
+      <input type="search" id="busca" placeholder="Buscar vendedor" value="${esc(S.busca)}">
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn sm ghost" id="copiarWa">📋 Copiar resumo pro WhatsApp</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="eyebrow">Total pago${eHoje?' até agora':''}</div><div class="v">${fmtBRL(r.valor)}</div><div class="s">soma das prévias de todos os vendedores</div></div>
+      <div class="kpi"><div class="eyebrow">Contratos pagos</div><div class="v">${r.contratos}</div><div class="s">${r.total?fmtBRL0(r.valor/Math.max(r.contratos,1)):'—'} por contrato</div></div>
+      <div class="kpi"><div class="eyebrow">Seguros pagos</div><div class="v">${r.seguros}</div><div class="s">${r.contratos?Math.round(r.seguros/r.contratos*100):0}% dos contratos</div></div>
+      <div class="kpi"><div class="eyebrow">Enviaram a ${r.ref.rotulo}</div><div class="v">${r.enviaram}<span class="muted" style="font-size:15px;font-weight:500">/${r.total}</span></div><div class="s">${r.noPrazo} no prazo · ${r.enviaram-r.noPrazo} atrasado${r.enviaram-r.noPrazo===1?'':'s'}${eHoje&&!slotAtual(new Date()).encerrado?` · limite ${r.ref.limite}`:''}</div></div>
+    </div>
+    ${r.faltam.length?`<div class="card" style="padding:12px 16px"><div class="chips" style="align-items:center"><span class="pill miss">Faltam ${r.faltam.length} na ${r.ref.rotulo}</span>${r.faltam.map(u=>`<span class="chip">${esc(u.nome)}</span>`).join('')}</div></div>`:`<div class="card" style="padding:12px 16px"><span class="pill ok">✓ Todos enviaram a ${r.ref.rotulo}</span></div>`}
+    <section class="card">
+      <div class="card-h"><div><h2>Acompanhamento · ${diaSemana(dia)} ${brDate(dia)}</h2><p class="note">Ordenado pelo total do dia. Cada célula: valor pago no período · contratos · seguros · horário. Última coluna = TOTAL (soma das 3 prévias).</p></div></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th class="name">Vendedor</th>${SLOTS.map(s=>`<th class="r">${s.rotulo}<br><span style="font-weight:400;letter-spacing:0;text-transform:none">até ${s.limite}</span></th>`).join('')}<th class="r">Total do dia</th></tr></thead>
+        <tbody>${linhas.map((l,i)=>{ const pend=!envioDe(l.u.id,dia,r.ref.n); return `<tr class="${pend?'pend':''} ${l.u.id===S.user.id?'me':''}">
+          <td class="name"><span class="rank">${i+1}</span> <b>${esc(l.u.nome)}</b><span class="sub"><span class="pill ${l.u.tipo}">${l.u.tipo==='pj'?'Corban':'Próprio'}</span>${pend?` <span class="pill miss">pendente</span>`:''}</span></td>
+          ${SLOTS.map(s=>cellEnvio(l.es[s.n-1],s,dia)).join('')}
+          <td class="r"><span class="val">${l.ult?fmtBRL(l.ult.valor):'—'}</span><span class="sub">${l.ult?`${l.ult.contratos} contratos · ${l.ult.seguros} seguros`:'sem envio'}</span></td></tr>`; }).join('')}</tbody>
+        <tfoot><tr><td class="name">Total · ${lista.length} vendedores</td>${porSlot.map(t=>`<td class="r"><span class="val">${fmtBRL(t.v)}</span><span class="sub">${t.c}c · ${t.sg}s · ${t.n} envios</span></td>`).join('')}<td class="r"><span class="val">${fmtBRL(r.valor)}</span><span class="sub">${r.contratos} contratos · ${r.seguros} seguros</span></td></tr></tfoot>
+      </table></div>
+    </section>
+    <section class="card total-box">
+      <div class="card-h"><div><div class="eyebrow">Somatório do dia · ${S.filtro==='todos'?'toda a equipe':S.filtro==='pj'?'Corban':'próprios'}${S.busca?' · filtrado':''}</div><h2>Total produzido em ${brDate(dia)}</h2></div><span class="muted">${lista.length} vendedor${lista.length===1?'':'es'}</span></div>
+      <div class="total-grid">
+        <div><div class="eyebrow">Valor total produzido</div><div class="tv accent">${fmtBRL(r.valor)}</div></div>
+        <div><div class="eyebrow">Contratos</div><div class="tv">${r.contratos}</div></div>
+        <div><div class="eyebrow">Seguros</div><div class="tv">${r.seguros}</div></div>
+      </div>
+      <div class="total-slots">${porSlot.map((t,i)=>`<div class="row"><span><b>${SLOTS[i].rotulo}</b> <span class="faint">até ${SLOTS[i].limite}</span></span><span class="tnum muted">${t.n} envio${t.n===1?'':'s'} · ${t.c} contratos · ${t.sg} seguros · <b class="num" style="color:var(--ink)">${fmtBRL(t.v)}</b></span></div>`).join('')}</div>
+      <p class="note">Total produzido = soma das 3 prévias de todos os vendedores. Cada prévia é o que foi pago naquele período.</p>
+    </section>`;
+}
+function textoWhats(dia, lista){
+  const r=resumoDia(dia,lista); const ref=r.ref;
+  const linhas=lista.map(u=>({u,e:envioDe(u.id,dia,ref.n)})).sort((a,b)=>(b.e?b.e.valor:-1)-(a.e?a.e.valor:-1));
+  return `*${ref.rotulo.toUpperCase()} · ${brDate(dia)}*\nTotal pago: *${fmtBRL(r.valor)}* · ${r.contratos} contratos · ${r.seguros} seguros\nEnviaram: ${r.enviaram}/${r.total}\n\n`+
+    linhas.map(({u,e})=>e?`${u.nome}: ${fmtBRL(e.valor)} · ${e.contratos}c · ${e.seguros}s (${e.hora}${e.atrasado?' ⚠':''})`:`${u.nome}: — não enviou`).join('\n');
+}
+function bindPainel(){
+  document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
+  document.querySelectorAll('#filtro [data-f]').forEach(b=>b.onclick=()=>{ S.filtro=b.dataset.f; render(); });
+  const bs=document.getElementById('busca'); bs.oninput=()=>{ S.busca=bs.value; const pos=bs.selectionStart; render(); const nb=document.getElementById('busca'); nb.focus(); nb.setSelectionRange(pos,pos); };
+  document.getElementById('copiarWa').onclick=async()=>{ const t=textoWhats(S.dia,listaFiltrada()); try{ await navigator.clipboard.writeText(t); toast('Resumo copiado. Cole no grupo do WhatsApp.'); }catch(e){ prompt('Copie o texto:',t); } };
+}
+
+
+/* ----- gerência ----- */
+function viewGerencia(){
+  const dia=S.dia; const lista=vendedores(); const r=resumoDia(dia,lista); const eHoje=dia===hoje();
+  const dias=diasUteisAte(dia,S.chartDias);
+  const serie=dias.map(d=>{ let int=0,pj=0,c=0,sg=0,n=0; for(const u of lista){ const e=ultimoDe(u.id,d); if(!e) continue; n++; if(u.tipo==='pj') pj+=e.valor; else int+=e.valor; c+=e.contratos; sg+=e.seguros; } return {d,int,pj,tot:int+pj,c,sg,n}; });
+  const passados=serie.slice(0,-1).filter(x=>x.tot>0); const media=passados.length?passados.reduce((a,x)=>a+x.tot,0)/passados.length:0;
+  const maxV=Math.max(...serie.map(x=>x.tot),1);
+  const melhor=serie.reduce((a,x)=>x.tot>(a?a.tot:0)?x:a,null);
+  const nowMin=new Date().getHours()*60+new Date().getMinutes();
+  const pont=SLOTS.map(s=>{ let ok=0,tot=0,miss=0; for(const d of dias){ if(d===hoje() && nowMin<minutos(s.limite)) continue; for(const u of lista){ const e=envioDe(u.id,d,s.n); tot++; if(e){ if(!e.atrasado) ok++; } else miss++; } } return {s,ok,tot,miss,late:tot-ok-miss}; });
+  const ranking=lista.map(u=>({u,e:ultimoDe(u.id,dia)})).filter(x=>x.e).sort((a,b)=>b.e.valor-a.e.valor);
+  const comEnvio=ranking.length; const ticket=r.contratos?r.valor/r.contratos:0; const porVend=comEnvio?r.valor/comEnvio:0;
+  const porTipo=['interno','pj'].map(t=>{ const l=lista.filter(u=>u.tipo===t); const rr=resumoDia(dia,l); const ce=l.filter(u=>ultimoDe(u.id,dia)).length; return {t,l,rr,ce}; });
+  const ritmo=SLOTS.map(s=>{ let v=0,c=0,sg=0,n=0; for(const u of lista){ const e=envioDe(u.id,dia,s.n); if(e){v+=e.valor;c+=e.contratos;sg+=e.seguros;n++;} } return {s,v,c,sg,n}; });
+  const atencao=lista.map(u=>({u,e:ultimoDe(u.id,dia)})).filter(x=>!x.e||x.e.valor===0);
+  const atrasos=(()=>{ const m=new Map(); for(const d of dias) for(const u of lista) for(const s of SLOTS){ const e=envioDe(u.id,d,s.n); if(e&&e.atrasado) m.set(u.id,(m.get(u.id)||0)+1); } return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5); })();
+  const sel=S.vendSel? DB.users.find(u=>u.id===S.vendSel) : null;
+  const hist=sel? dias.map(d=>({d,e:ultimoDe(sel.id,d),es:SLOTS.map(s=>envioDe(sel.id,d,s.n))})) : [];
+  const histTot=hist.reduce((a,x)=>a+(x.e?x.e.valor:0),0), histC=hist.reduce((a,x)=>a+(x.e?x.e.contratos:0),0), histS=hist.reduce((a,x)=>a+(x.e?x.e.seguros:0),0);
+  const histAtr=hist.reduce((a,x)=>a+x.es.filter(e=>e&&e.atrasado).length,0), histMiss=hist.reduce((a,x)=>a+x.es.filter((e,i)=>!e&&!(x.d===hoje()&&nowMin<minutos(SLOTS[i].limite))).length,0);
+  // gráfico
+  const W=760,H=220,PL=8,PB=26,PT=18; const bw=(W-PL*2)/serie.length;
+  const svg=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Total produzido por dia">
+    ${[0.25,0.5,0.75,1].map(f=>`<line class="grid" x1="0" x2="${W}" y1="${PT+(H-PT-PB)*(1-f)}" y2="${PT+(H-PT-PB)*(1-f)}"/>`).join('')}
+    ${media?`<line x1="0" x2="${W}" y1="${H-PB-(H-PT-PB)*media/maxV}" y2="${H-PB-(H-PT-PB)*media/maxV}" stroke="var(--muted)" stroke-dasharray="4 4"/>`:''}
+    ${serie.map((x,i)=>{ const hInt=(H-PT-PB)*x.int/maxV, hPj=(H-PT-PB)*x.pj/maxV; const x0=PL+i*bw+bw*0.15, w=bw*0.7; const yTop=H-PB-hInt-hPj;
+      return `<rect class="bar-pj" x="${x0}" y="${H-PB-hPj}" width="${w}" height="${hPj}" rx="2"/><rect class="bar-int" x="${x0}" y="${H-PB-hPj-hInt}" width="${w}" height="${hInt}" rx="2"/>
+      <text class="vl" x="${x0+w/2}" y="${yTop-5}" text-anchor="middle">${x.tot?fmtBRL0(x.tot).replace('R$','').trim():''}</text>
+      <text class="lbl" x="${x0+w/2}" y="${H-8}" text-anchor="middle">${brShort(x.d)}${x.d===hoje()?' •':''}</text>`; }).join('')}
+  </svg>`;
+  const tipoLbl=t=>t==='pj'?'Corban':'Próprios';
+  return `<div class="toolbar"><input type="date" id="dia" value="${dia}" max="${hoje()}"><div class="seg" id="cd">${[5,10,13].map(n=>`<button class="${S.chartDias===n?'on':''}" data-n="${n}">${n} dias</button>`).join('')}</div><span class="note">${eHoje?'Hoje, em andamento':'Dia fechado'} · ${comEnvio} de ${lista.length} com envio</span></div>
+  <div class="kpis">
+    <div class="kpi accent"><div class="eyebrow">Total produzido · ${brShort(dia)}</div><div class="v">${fmtBRL(r.valor)}</div><div class="s">${media?`${r.valor>=media?'▲':'▼'} ${Math.abs(Math.round((r.valor/media-1)*100))}% vs média de ${fmtBRL0(media)} (${passados.length} dias)`:'sem histórico'}</div></div>
+    <div class="kpi"><div class="eyebrow">Contratos</div><div class="v">${r.contratos}</div><div class="s">ticket médio ${fmtBRL0(ticket)}</div></div>
+    <div class="kpi"><div class="eyebrow">Seguros</div><div class="v">${r.seguros}<span class="muted" style="font-size:14px;font-weight:500"> · ${r.contratos?Math.round(r.seguros/r.contratos*100):0}%</span></div><div class="s">dos contratos saíram com seguro</div></div>
+    <div class="kpi"><div class="eyebrow">Média por vendedor</div><div class="v">${fmtBRL0(porVend)}</div><div class="s">entre ${comEnvio} com envio · ${lista.length-comEnvio} sem envio</div></div>
+  </div>
+  <div class="grid2">
+    <section class="card"><div class="card-h"><h2>Total produzido por dia</h2><div class="legend"><span><i></i>Próprios</span><span><i class="pj"></i>Corban</span><span>┅ média</span></div></div>${svg}<p class="note">Valor final do dia (última prévia de cada vendedor). • = hoje.${melhor?` Melhor dia do período: ${brShort(melhor.d)} com ${fmtBRL0(melhor.tot)} e ${melhor.c} contratos.`:''}</p></section>
+    <section class="card"><div class="card-h"><h2>Ritmo do dia</h2><span class="muted">o que a equipe pagou em cada período</span></div>
+      <div class="ritmo">${ritmo.map((x,i)=>{ const acum=ritmo.slice(0,i+1).reduce((a,y)=>a+y.v,0); const aberto=eHoje&&nowMin<=minutos(x.s.limite); return `<div class="step"><div class="eyebrow">${x.s.rotulo} · ${x.s.limite}</div><div class="v">${x.n?fmtBRL0(x.v):'—'}</div><div class="d">${x.n?`${x.c} contratos · ${x.sg} seguros`:aberto?'em aberto':'sem envios'}</div><div class="d">${x.n?`${x.n}/${lista.length} enviaram · acumulado até aqui ${fmtBRL0(acum)}`:''}</div></div>`; }).join('')}</div>
+      <div class="cmp" style="margin-top:12px">${porTipo.map(p=>`<div class="box"><div class="eyebrow">${tipoLbl(p.t)} · ${p.l.length} vendedores</div><div class="big num">${fmtBRL0(p.rr.valor)}</div><div class="note">${p.rr.contratos} contratos · ${p.rr.seguros} seguros · ticket ${fmtBRL0(p.rr.contratos?p.rr.valor/p.rr.contratos:0)}</div><div class="note">média ${fmtBRL0(p.ce?p.rr.valor/p.ce:0)} por vendedor com envio · ${p.rr.enviaram}/${p.l.length} na ${p.rr.ref.rotulo}</div><div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${r.valor?Math.round(p.rr.valor/r.valor*100):0}%"></div></div><div class="note">${r.valor?Math.round(p.rr.valor/r.valor*100):0}% do total do dia</div></div>`).join('')}</div>
+    </section>
+  </div>
+  <div class="grid2">
+    <section class="card"><div class="card-h"><h2>Pontualidade dos envios</h2><span class="muted">últimos ${dias.length} dias úteis</span></div>
+      <div class="bars">${pont.map(p=>`<div class="bar-row"><span>${p.s.rotulo}<br><span class="faint" style="font-size:11px">até ${p.s.limite}</span></span><div><div class="bar-track"><div class="bar-fill" style="width:${p.tot?Math.round(p.ok/p.tot*100):0}%"></div></div><div class="note" style="margin-top:3px">${p.ok} no prazo · ${p.late} atrasados · ${p.miss} sem envio</div></div><b class="num" style="text-align:right">${p.tot?Math.round(p.ok/p.tot*100):0}%</b></div>`).join('')}</div>
+      <div style="margin-top:14px" class="list"><div class="eyebrow">Quem mais atrasa no período</div>${atrasos.length?atrasos.map(([id,n])=>{ const u=DB.users.find(x=>x.id===id); return `<div class="row"><span>${esc(u.nome)} <span class="pill ${u.tipo}">${u.tipo==='pj'?'Corban':'Próprio'}</span></span><span class="pill late">${n} atraso${n===1?'':'s'}</span></div>`; }).join(''):'<p class="note">Nenhum atraso no período.</p>'}</div>
+    </section>
+    <section class="card"><div class="card-h"><h2>Precisam de atenção · ${brShort(dia)}</h2><span class="pill ${atencao.length?'miss':'ok'}">${atencao.length?`${atencao.length} vendedor${atencao.length===1?'':'es'}`:'✓ ninguém'}</span></div>
+      ${atencao.length?`<div class="list">${atencao.map(x=>`<div class="row"><span><b>${esc(x.u.nome)}</b> <span class="pill ${x.u.tipo}">${x.u.tipo==='pj'?'Corban':'Próprio'}</span></span><span class="${x.e?'pill late':'pill miss'}">${x.e?`zerado na ${SLOTS[x.e.previa-1].rotulo} (${x.e.hora})`:'nenhuma prévia enviada'}</span></div>`).join('')}</div>`:'<p class="note">Todos os vendedores enviaram prévia com valor no dia.</p>'}
+      <p class="note" style="margin-top:10px">Sem envio ou com valor zerado na última prévia. Toque no nome no Painel geral para conferir o histórico.</p>
+    </section>
+  </div>
+  <div class="grid2">
+    <section class="card"><div class="card-h"><h2>Ranking do dia</h2><span class="muted">${ranking.length} com envio</span></div>
+      <div class="tablewrap"><table style="min-width:0"><thead><tr><th>#</th><th class="name">Vendedor</th><th class="r">Produzido</th><th class="r">Contr.</th><th class="r">Seg.</th><th class="r">% do dia</th></tr></thead>
+      <tbody>${ranking.slice(0,10).map((x,i)=>`<tr><td class="rank">${i+1}</td><td class="name"><b>${esc(x.u.nome)}</b><span class="sub">${x.u.tipo==='pj'?'Corban':'Próprio'}</span></td><td class="r"><span class="val">${fmtBRL(x.e.valor)}</span></td><td class="r tnum">${x.e.contratos}</td><td class="r tnum">${x.e.seguros}</td><td class="r tnum">${r.valor?(x.e.valor/r.valor*100).toFixed(1).replace('.',','):'0'}%</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td></td><td class="name">Top 10</td><td class="r"><span class="val">${fmtBRL(ranking.slice(0,10).reduce((a,x)=>a+x.e.valor,0))}</span></td><td class="r tnum">${ranking.slice(0,10).reduce((a,x)=>a+x.e.contratos,0)}</td><td class="r tnum">${ranking.slice(0,10).reduce((a,x)=>a+x.e.seguros,0)}</td><td class="r tnum">${r.valor?Math.round(ranking.slice(0,10).reduce((a,x)=>a+x.e.valor,0)/r.valor*100):0}%</td></tr></tfoot></table></div>
+    </section>
+    <section class="card"><div class="card-h"><h2>Detalhe por vendedor</h2><select id="vendSel" style="padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px"><option value="">Escolha um vendedor…</option>${lista.map(u=>`<option value="${u.id}" ${sel&&sel.id===u.id?'selected':''}>${esc(u.nome)} (${u.tipo==='pj'?'Corban':'Próprio'})</option>`).join('')}</select></div>
+      ${sel?`<div class="total-grid" style="margin-bottom:12px"><div><div class="eyebrow">Produzido em ${dias.length} dias</div><div class="tv accent">${fmtBRL(histTot)}</div></div><div><div class="eyebrow">Contratos</div><div class="tv">${histC}</div></div><div><div class="eyebrow">Seguros</div><div class="tv">${histS}</div></div></div>
+      <div class="chips" style="margin-bottom:10px"><span class="pill neutral">média ${fmtBRL0(histTot/Math.max(hist.filter(x=>x.e).length,1))}/dia</span><span class="pill ${histAtr?'late':'ok'}">${histAtr} envio${histAtr===1?'':'s'} atrasado${histAtr===1?'':'s'}</span><span class="pill ${histMiss?'miss':'ok'}">${histMiss} sem envio</span></div>
+      <div class="tablewrap"><table style="min-width:0"><thead><tr><th class="name">Dia</th>${SLOTS.map(s=>`<th class="r">${s.rotulo}</th>`).join('')}<th class="r">Total</th></tr></thead>
+      <tbody>${hist.slice().reverse().map(x=>`<tr><td class="name"><b>${brShort(x.d)}</b> <span class="faint">${diaSemana(x.d)}</span></td>${x.es.map(e=>`<td class="r">${e?`<span class="val">${fmtBRL0(e.valor)}</span><span class="sub"><span class="pill ${e.atrasado?'late':'ok'}" style="padding:0 5px">${e.hora}</span></span>`:'<span class="faint">—</span>'}</td>`).join('')}<td class="r">${x.e?`<span class="val">${fmtBRL(x.e.valor)}</span><span class="sub">${x.e.contratos}c · ${x.e.seguros}s</span>`:'<span class="faint">—</span>'}</td></tr>`).join('')}</tbody></table></div>`
+      :`<p class="note">Escolha um vendedor para ver o histórico dia a dia, com horário de cada prévia, atrasos e total do período.</p>`}
+    </section>
+  </div>
+  <section class="card"><div class="card-h"><div><h2>Vendedores</h2><p class="note">${lista.length} ativos · ${lista.filter(u=>u.tipo==='interno').length} próprios · ${lista.filter(u=>u.tipo==='pj').length} Corban</p></div></div>
+    <form id="fNovo" class="list" style="gap:8px;margin-bottom:12px">
+      <div class="eyebrow">Cadastrar vendedor</div>
+      <div class="grid3"><div class="field"><input id="nvNome" placeholder="Nome completo" required></div><div class="field"><select id="nvTipo"><option value="interno">Próprio</option><option value="pj">Corban (terceirizada)</option></select></div><button class="btn primary" type="submit">Cadastrar</button></div>
+      <p class="note">Usuário e senha inicial (1234) são gerados automaticamente a partir do nome.</p>
+    </form>
+    <div class="tablewrap" style="max-height:340px;overflow:auto"><table style="min-width:0"><thead><tr><th class="name">Nome</th><th>Usuário</th><th>Tipo</th><th></th></tr></thead>
+    <tbody>${DB.users.filter(u=>u.papel==='vendedor').sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(u=>`<tr style="${u.ativo===false?'opacity:.5':''}"><td class="name"><b>${esc(u.nome)}</b></td><td class="muted">${esc(u.login)}</td><td><span class="pill ${u.tipo}">${u.tipo==='pj'?'Corban':'Próprio'}</span></td><td><button class="btn sm ghost" data-toggle="${u.id}">${u.ativo===false?'Reativar':'Desativar'}</button></td></tr>`).join('')}</tbody></table></div>
+  </section>`;
+}
+function bindGerencia(){
+  document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
+  document.querySelectorAll('#cd [data-n]').forEach(b=>b.onclick=()=>{ S.chartDias=Number(b.dataset.n); render(); });
+  document.getElementById('vendSel').onchange=e=>{ S.vendSel=e.target.value||null; render(); };
+  document.getElementById('fNovo').addEventListener('submit',e=>{ e.preventDefault(); const nome=document.getElementById('nvNome').value.trim(); if(!nome) return; let login=loginDe(nome); let k=2; while(DB.users.some(u=>u.login===login)) login=loginDe(nome)+(k++);
+    DB.users.push({ id:uid(), nome, login, senha:'1234', tipo:document.getElementById('nvTipo').value, papel:'vendedor', ativo:true }); salvar(); toast(`${nome} cadastrado · usuário ${login}`); render(); });
+  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const u=DB.users.find(x=>x.id===b.dataset.toggle); u.ativo=u.ativo===false; salvar(); render(); });
+}
+/* ----- relatório do mês ----- */
+function diasUteisDoMes(ym){ const [Y,M]=ym.split('-').map(Number); const out=[]; const d=new Date(Y,M-1,1); while(d.getMonth()===M-1){ const wd=d.getDay(); if(wd!==0&&wd!==6) out.push(isoDate(d)); d.setDate(d.getDate()+1); } return out; }
+function dadosMes(ym, lista){
+  const dias=diasUteisDoMes(ym); const ids=new Set(lista.map(u=>u.id));
+  const linhas=dias.map(dia=>{ const ps=SLOTS.map(s=>{ let v=0,c=0,sg=0,n=0,atr=0; for(const u of lista){ const e=envioDe(u.id,dia,s.n); if(e){ v+=e.valor;c+=e.contratos;sg+=e.seguros;n++; if(e.atrasado) atr++; } } return {v,c,sg,n,atr}; });
+    const tot=ps.reduce((a,p)=>({v:a.v+p.v,c:a.c+p.c,sg:a.sg+p.sg,n:a.n+p.n,atr:a.atr+p.atr}),{v:0,c:0,sg:0,n:0,atr:0});
+    const env=new Set(DB.envios.filter(e=>e.data===dia&&ids.has(e.userId)).map(e=>e.userId)).size; return {dia,ps,tot,env}; });
+  const comDados=linhas.filter(l=>l.env>0);
+  const T=linhas.reduce((a,l)=>({v:a.v+l.tot.v,c:a.c+l.tot.c,sg:a.sg+l.tot.sg,n:a.n+l.tot.n,atr:a.atr+l.tot.atr}),{v:0,c:0,sg:0,n:0,atr:0});
+  const porV=lista.map(u=>{ const es=DB.envios.filter(e=>e.userId===u.id&&e.data.startsWith(ym)); return {u,v:es.reduce((a,e)=>a+e.valor,0),c:es.reduce((a,e)=>a+e.contratos,0),sg:es.reduce((a,e)=>a+e.seguros,0),dias:new Set(es.map(e=>e.data)).size,atr:es.filter(e=>e.atrasado).length,n:es.length}; }).sort((a,b)=>b.v-a.v);
+  return {dias,linhas,comDados,T,porV};
+}
+function viewMes(){
+  const ym=S.mes; const lista=listaFiltrada(); const D=dadosMes(ym,lista); const hj=hoje();
+  const [Y,M]=ym.split('-').map(Number); const nomeMes=new Date(Y,M-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const diasPassados=D.comDados.length; const mediaDia=diasPassados?D.T.v/diasPassados:0;
+  const restantes=D.dias.filter(x=>x>hj).length; const projecao=D.T.v+mediaDia*restantes; const emAndamento=ym===hj.slice(0,7);
+  const melhor=D.comDados.reduce((a,l)=>l.tot.v>(a?a.tot.v:0)?l:a,null);
+  const maxD=Math.max(...D.linhas.map(l=>l.tot.v),1);
+  const W=760,H=200,PB=26,PT=18; const bw=(W-16)/D.linhas.length;
+  const svg=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Total produzido por dia no mês">
+    ${[0.5,1].map(f=>`<line class="grid" x1="0" x2="${W}" y1="${PT+(H-PT-PB)*(1-f)}" y2="${PT+(H-PT-PB)*(1-f)}"/>`).join('')}
+    ${mediaDia?`<line x1="0" x2="${W}" y1="${H-PB-(H-PT-PB)*mediaDia/maxD}" y2="${H-PB-(H-PT-PB)*mediaDia/maxD}" stroke="var(--muted)" stroke-dasharray="4 4"/>`:''}
+    ${D.linhas.map((l,i)=>{ const h=(H-PT-PB)*l.tot.v/maxD; const x0=8+i*bw+bw*0.18, w=bw*0.64; const futuro=l.dia>hj;
+      return `<rect class="bar-int" x="${x0}" y="${H-PB-h}" width="${w}" height="${h}" rx="2" ${futuro?'opacity=".15"':''}/>${l.tot.v&&D.linhas.length<=23?`<text class="vl" x="${x0+w/2}" y="${H-PB-h-4}" text-anchor="middle" style="font-size:9px">${Math.round(l.tot.v/1000)}k</text>`:''}<text class="lbl" x="${x0+w/2}" y="${H-8}" text-anchor="middle" style="font-size:9.5px">${l.dia.slice(8)}</text>`; }).join('')}
+  </svg>`;
+  return `<div class="toolbar">
+      <input type="month" id="mes" value="${ym}" max="${hj.slice(0,7)}" style="padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px">
+      <div class="seg" id="filtro">${[['todos','Todos'],['interno','Próprios'],['pj','Corban']].map(([k,l])=>`<button class="${S.filtro===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>
+      <input type="search" id="busca" placeholder="Buscar vendedor" value="${esc(S.busca)}">
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn sm ghost" id="copiarCsv">⇩ Copiar planilha (CSV)</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi accent"><div class="eyebrow">Total produzido · ${nomeMes}</div><div class="v">${fmtBRL(D.T.v)}</div><div class="s">${diasPassados} dia${diasPassados===1?'':'s'} com envio de ${D.dias.length} úteis${emAndamento?` · ${restantes} restante${restantes===1?'':'s'}`:''}</div></div>
+      <div class="kpi"><div class="eyebrow">Contratos no mês</div><div class="v">${D.T.c}</div><div class="s">ticket médio ${fmtBRL0(D.T.c?D.T.v/D.T.c:0)} · ${D.T.sg} seguros (${D.T.c?Math.round(D.T.sg/D.T.c*100):0}%)</div></div>
+      <div class="kpi"><div class="eyebrow">Média por dia</div><div class="v">${fmtBRL0(mediaDia)}</div><div class="s">${melhor?`melhor dia ${brShort(melhor.dia)} · ${fmtBRL0(melhor.tot.v)}`:'sem dados'}</div></div>
+      <div class="kpi"><div class="eyebrow">${emAndamento?'Projeção do mês':'Pontualidade'}</div><div class="v">${emAndamento?fmtBRL0(projecao):(D.T.n?Math.round((D.T.n-D.T.atr)/D.T.n*100):0)+'%'}</div><div class="s">${emAndamento?'no ritmo atual, até o fim do mês':`${D.T.n-D.T.atr} envios no prazo de ${D.T.n}`}</div></div>
+    </div>
+    <section class="card"><div class="card-h"><h2>Produção dia a dia</h2><div class="legend"><span><i></i>total do dia</span><span>┅ média</span></div></div>${svg}</section>
+    <section class="card">
+      <div class="card-h"><div><h2>Acompanhamento do mês · ${nomeMes}</h2><p class="note">Um dia por linha: o que foi pago em cada prévia, total do dia, contratos, seguros e quantos enviaram.</p></div></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th class="name">Dia</th>${SLOTS.map(s=>`<th class="r">${s.rotulo}</th>`).join('')}<th class="r">Total do dia</th><th class="r">Contratos</th><th class="r">Seguros</th><th class="r">Enviaram</th></tr></thead>
+        <tbody>${D.linhas.map(l=>{ const futuro=l.dia>hj; const semNada=!futuro&&l.env===0; return `<tr class="${futuro?'':''}" style="${futuro?'opacity:.45':''}"><td class="name"><b>${brShort(l.dia)}</b> <span class="faint">${diaSemana(l.dia)}</span>${l.dia===hj?' <span class="pill neutral">hoje</span>':''}${semNada?' <span class="pill miss">sem envios</span>':''}</td>${l.ps.map(p=>`<td class="r">${p.n?`<span class="val">${fmtBRL(p.v)}</span><span class="sub">${p.c}c · ${p.sg}s · ${p.n} env.${p.atr?` · <span style="color:var(--warn)">${p.atr} atr.</span>`:''}</span>`:'<span class="faint">—</span>'}</td>`).join('')}<td class="r"><span class="val">${l.env?fmtBRL(l.tot.v):'—'}</span></td><td class="r tnum">${l.env?l.tot.c:'—'}</td><td class="r tnum">${l.env?l.tot.sg:'—'}</td><td class="r tnum">${l.env?`${l.env}/${lista.length}`:'—'}</td></tr>`; }).join('')}</tbody>
+        <tfoot><tr><td class="name">Total do mês</td>${SLOTS.map((s,i)=>{ const v=D.linhas.reduce((a,l)=>a+l.ps[i].v,0), c=D.linhas.reduce((a,l)=>a+l.ps[i].c,0), sg=D.linhas.reduce((a,l)=>a+l.ps[i].sg,0); return `<td class="r"><span class="val">${fmtBRL(v)}</span><span class="sub">${c}c · ${sg}s</span></td>`; }).join('')}<td class="r"><span class="val">${fmtBRL(D.T.v)}</span></td><td class="r tnum">${D.T.c}</td><td class="r tnum">${D.T.sg}</td><td class="r tnum">${diasPassados} dias</td></tr></tfoot>
+      </table></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><div><h2>Por vendedor no mês</h2><p class="note">Soma de todas as prévias do mês. Ordenado pelo total.</p></div><span class="muted">${D.porV.filter(x=>x.n).length} de ${lista.length} com envio</span></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th class="name">Vendedor</th><th class="r">Total no mês</th><th class="r">Contratos</th><th class="r">Seguros</th><th class="r">Média/dia</th><th class="r">Dias com envio</th><th class="r">Atrasos</th><th class="r">% do total</th></tr></thead>
+        <tbody>${D.porV.map((x,i)=>`<tr class="${x.u.id===S.user.id?'me':''}"><td class="name"><span class="rank">${i+1}</span> <b>${esc(x.u.nome)}</b><span class="sub"><span class="pill ${x.u.tipo}">${x.u.tipo==='pj'?'Corban':'Próprio'}</span></span></td><td class="r"><span class="val">${fmtBRL(x.v)}</span></td><td class="r tnum">${x.c}</td><td class="r tnum">${x.sg}</td><td class="r tnum">${fmtBRL0(x.dias?x.v/x.dias:0)}</td><td class="r tnum">${x.dias}/${diasPassados}</td><td class="r">${x.atr?`<span class="pill late">${x.atr}</span>`:'<span class="faint">0</span>'}</td><td class="r tnum">${D.T.v?(x.v/D.T.v*100).toFixed(1).replace('.',','):'0'}%</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td class="name">Total · ${lista.length} vendedores</td><td class="r"><span class="val">${fmtBRL(D.T.v)}</span></td><td class="r tnum">${D.T.c}</td><td class="r tnum">${D.T.sg}</td><td class="r tnum">${fmtBRL0(mediaDia)}</td><td class="r tnum">${diasPassados}</td><td class="r tnum">${D.T.atr}</td><td class="r tnum">100%</td></tr></tfoot>
+      </table></div>
+    </section>`;
+}
+function csvMes(){
+  const lista=listaFiltrada(); const D=dadosMes(S.mes,lista); const sep=';'; const num=n=>String(Math.round(n*100)/100).replace('.',',');
+  const l1=['Dia','1ª prévia','2ª prévia','3ª prévia','Total do dia','Contratos','Seguros','Enviaram'];
+  const rows=D.linhas.filter(l=>l.env).map(l=>[brDate(l.dia),...l.ps.map(p=>num(p.v)),num(l.tot.v),l.tot.c,l.tot.sg,l.env]);
+  const l2=['Vendedor','Tipo','Total no mês','Contratos','Seguros','Dias com envio','Atrasos'];
+  const rows2=D.porV.map(x=>[x.u.nome,x.u.tipo==='pj'?'Corban':'Próprio',num(x.v),x.c,x.sg,x.dias,x.atr]);
+  return [l1.join(sep),...rows.map(r=>r.join(sep)),'',l2.join(sep),...rows2.map(r=>r.join(sep))].join('\n');
+}
+function bindMes(){
+  document.getElementById('mes').onchange=e=>{ S.mes=e.target.value||hoje().slice(0,7); render(); };
+  document.querySelectorAll('#filtro [data-f]').forEach(b=>b.onclick=()=>{ S.filtro=b.dataset.f; render(); });
+  const bs=document.getElementById('busca'); bs.oninput=()=>{ S.busca=bs.value; const pos=bs.selectionStart; render(); const nb=document.getElementById('busca'); nb.focus(); nb.setSelectionRange(pos,pos); };
+  document.getElementById('copiarCsv').onclick=async()=>{ const t=csvMes(); try{ await navigator.clipboard.writeText(t); toast('Planilha copiada. Cole no Excel ou no Google Planilhas.'); }catch(e){ prompt('Copie o texto:',t); } };
+}
+
+render();
+setInterval(()=>{ if(S.user && document.visibilityState==='visible') { const st=document.querySelector('.top .status span:last-child'); if(st){ const s=slotAtual(new Date()); st.textContent = s.encerrado?'Prévias de hoje encerradas':`${s.slot.rotulo} · até ${s.slot.limite} · faltam ${fmtFalta(s.falta)}`; } } }, 30000);
+</script>
