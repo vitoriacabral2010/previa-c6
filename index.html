@@ -245,6 +245,42 @@ html,body{max-width:100%;overflow-x:hidden}
   .ritmo{grid-template-columns:1fr}
   table{min-width:640px}
 }
+/* cartões no celular (tabelas largas viram cartões) */
+.mcards{display:none}
+.mcard{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);display:grid;gap:10px}
+.mcard.pend{box-shadow:inset 3px 0 0 var(--bad)}
+.mcard.me{background:var(--surface2)}
+.mcard.dim{opacity:.55}
+.mcard.total{background:var(--ink);color:var(--bg);border-color:var(--ink)} .mcard.total .mc-cs,.mcard.total .eyebrow{color:var(--bg);opacity:.8}
+.mc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
+.mc-top b{font-weight:600}
+.mc-tot{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.mc-v{font-family:var(--display);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.mc-cs{font-size:12px;color:var(--muted);text-align:right;line-height:1.4} .mc-cs b{color:var(--ink);font-weight:600}
+.mc-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mc-slot{border-radius:9px;padding:7px 8px;background:var(--surface2);display:grid;gap:2px;min-width:0}
+.mc-slot.ok{background:var(--pos-soft)} .mc-slot.late{background:var(--warn-soft)} .mc-slot.miss{background:var(--bad-soft)}
+.mc-sl{font-size:11px;font-weight:600;color:var(--muted);display:flex;justify-content:space-between;gap:4px} .mc-slot.ok .mc-sl{color:var(--pos)} .mc-slot.late .mc-sl{color:var(--warn)} .mc-slot.miss .mc-sl{color:var(--bad)}
+.mc-sl span{font-weight:500}
+.mc-sv{font-family:var(--display);font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-sc{font-size:11px;color:var(--muted)}
+@media(max-width:640px){
+  .mcards{display:grid;gap:10px}
+  .tablewrap:has(+ .mcards){display:none}
+  .mcards + .mcards{margin-top:0}
+}
+/* acessos */
+.uform{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:820px){.uform{grid-template-columns:1fr 1fr}} @media(max-width:640px){.uform{grid-template-columns:1fr}}
+.ulist{display:grid;gap:8px}
+.urow{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:minmax(200px,1fr) auto;gap:10px 16px;align-items:center}
+@media(max-width:820px){.urow{grid-template-columns:1fr}}
+.urow.dim{opacity:.55} .urow.me{background:var(--surface2)}
+.uinfo{display:grid;gap:3px;font-size:14px} .uinfo b{font-weight:600} .uinfo .muted{font-size:12.5px}
+.uctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.uctl select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;color:var(--ink)}
+.uctl label{display:flex;align-items:center;gap:5px} .uctl .chk input{width:16px;height:16px}
+.mcard.total .mc-cs b{color:var(--bg)}
 </style>
 
 <div id="app"></div>
@@ -274,6 +310,7 @@ const Store = {
 
 /* ---------- utilidades ---------- */
 const fmtBRL = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const fmtMil = n => Math.abs(n||0)>=1000 ? (n/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+' mil' : fmtBRL0(n);
 const fmtBRL0 = n => (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 const pad = n => String(n).padStart(2,'0');
 const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -309,8 +346,9 @@ function seed(){
   NOMES_INT.forEach((n,i)=>users.push({ id:'u'+(i+1), nome:n, login:loginDe(n), senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }));
   NOMES_PJ.forEach((n,i)=>users.push({ id:'u'+(i+16), nome:n, login:loginDe(n), senha:'1234', tipo:'pj', papel:'vendedor', ativo:true }));
   users.push({ id:'j1', nome:'Julio Cesar', login:'julio', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
-  users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true });
-  users.push({ id:'g1', nome:'Carlos Henrique', login:'gerente', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
+  users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'gerente', vende:true, ativo:true });
+  users.push({ id:'c1', nome:'Chefe (gerente comercial)', login:'chefe', senha:'1234', tipo:'interno', papel:'gerente', vende:false, ativo:true });
+  users.push({ id:'g1', nome:'Carlos Henrique', login:'gerente', senha:'1234', tipo:'interno', papel:'coordenador', vende:false, ativo:true });
 
   // últimos 12 dias úteis + hoje
   const dias=[]; const d=new Date(); d.setHours(12,0,0,0);
@@ -351,6 +389,8 @@ function seed(){
 let DB = Store.load() || seed();
 // garantia da demonstração: a Vitória sempre existe (usuário vitoria.ferreira, senha 1234)
 (function(){ if(!DB.users.some(u=>u.login==='julio')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
+// perfis: Vitória = admin que envia prévia; chefe = admin; Carlos = coordenador
+(function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } if(!DB.users.some(u=>u.login==='chefe')){ DB.users.push({ id:'c1', nome:'Chefe (gerente comercial)', login:'chefe', senha:'1234', tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
 // migração: usuários criados na versão anterior (previa_c6_v1) são preservados
 try{ const v1=JSON.parse(localStorage.getItem('previa_c6_v1')||'null'); if(v1&&v1.users){ let add=0; for(const u of v1.users){ if(!DB.users.some(x=>x.login===u.login)){ DB.users.push(u); add++; } } if(add){ salvar(); } localStorage.removeItem('previa_c6_v1'); } }catch(e){}
 const S = { user:null, tab:'enviar', dia:hoje(), mes:hoje().slice(0,7), vendSel:null, filtro:'todos', busca:'', previa:null, chartDias:10 };
@@ -360,7 +400,7 @@ function salvar(){ Store.save(DB); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2600); }
 
 /* ---------- consultas ---------- */
-const vendedores = () => DB.users.filter(u=>u.papel==='vendedor'&&u.ativo!==false).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+const vendedores = () => DB.users.filter(u=>u.ativo!==false&&(u.papel==='vendedor'||u.vende===true)).sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 const enviosDia = dia => DB.envios.filter(e=>e.data===dia);
 function envioDe(uid_, dia, n){ return DB.envios.find(e=>e.userId===uid_&&e.data===dia&&e.previa===n) || null; }
 // TOTAL do dia de um vendedor = soma das prÃ©vias enviadas (valor, contratos, seguros); previa/hora = Ãºltima enviada
@@ -385,10 +425,10 @@ function diasUteisAte(dia, n){ const out=[]; const d=new Date(dia+'T12:00:00'); 
 const app = document.getElementById('app');
 function render(){
   if(!S.user){ app.innerHTML = viewLogin(); bindLogin(); return; }
-  if(S.tab==='gerencia' && S.user.papel!=='gerente') S.tab='painel';
-  app.innerHTML = viewShell() + `<div class="main">${ S.tab==='enviar'?viewEnviar(): S.tab==='painel'?viewPainel(): S.tab==='mes'?viewMes(): viewGerencia() }</div>`;
+  { const ok=abasDe(S.user).map(t=>t[0]); if(!ok.includes(S.tab)) S.tab=ok[0]; }
+  app.innerHTML = viewShell() + `<div class="main">${ S.tab==='enviar'?viewEnviar(): S.tab==='painel'?viewPainel(): S.tab==='mes'?viewMes(): S.tab==='acessos'?viewAcessos(): viewGerencia() }</div>`;
   bindShell();
-  if(S.tab==='enviar') bindEnviar(); else if(S.tab==='painel') bindPainel(); else if(S.tab==='mes') bindMes(); else bindGerencia();
+  if(S.tab==='enviar') bindEnviar(); else if(S.tab==='painel') bindPainel(); else if(S.tab==='mes') bindMes(); else if(S.tab==='acessos') bindAcessos(); else bindGerencia();
 }
 
 /* ----- login ----- */
@@ -427,7 +467,7 @@ function viewLogin(){
       <button class="btn ghost block" type="button" id="irEntrar">Já tenho usuário · entrar</button>
     </div>
     <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b>. Toque para entrar como:</div>
-      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (própria)</button><button type="button" class="chip" data-quick="julio" style="border-color:var(--ink);font-weight:600">Julio (gerente)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (gerente)</button></div>
+      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="julio" style="border-color:var(--ink);font-weight:600">Julio (admin)</button><button type="button" class="chip" data-quick="chefe">Chefe (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
       <div class="faint">43 vendedores cadastrados · 15 próprios · 28 Corban</div></div>
   </form></div>`;
 }
@@ -436,7 +476,7 @@ function acharUsuario(txt){
   const k=normLogin(txt); if(!k) return null;
   return DB.users.find(u=>normLogin(u.login)===k) || DB.users.find(u=>chave(u.nome)===chave(txt)) || null;
 }
-function logar(u){ S.user=u; Store.setSession(u.id); S.tab = u.papel==='gerente' ? 'painel' : 'enviar'; render(); }
+function logar(u){ S.user=u; Store.setSession(u.id); S.tab = abasDe(u)[0][0]; render(); }
 function bindLogin(){
   const f=document.getElementById('loginForm'); const $=id=>document.getElementById(id);
   const erro=(id,msg)=>{ const el=$(id); el.textContent=msg; el.classList.toggle('hide',!msg); };
@@ -474,14 +514,16 @@ function bindLogin(){
 }
 
 /* ----- shell ----- */
+// o que cada perfil vê: vendedor = só Enviar; coordenador = Painel + Mês; admin = tudo
+function abasDe(u){ const t=[]; if(enviaPrevia(u)) t.push(['enviar','Enviar prévia']); if(u.papel==='coordenador'||u.papel==='gerente'){ t.push(['painel','Painel geral'],['mes','Mês']); } if(u.papel==='gerente'){ t.push(['gerencia','Gerência'],['acessos','Acessos']); } if(!t.length) t.push(['enviar','Enviar prévia']); return t; }
 function viewShell(){
   const st=slotAtual(new Date()); const d=new Date();
-  const tabs=[['enviar','Enviar prévia'],['painel','Painel geral'],['mes','Mês']]; if(S.user.papel==='gerente') tabs.push(['gerencia','Gerência']);
+  const tabs=abasDe(S.user);
   return `<header class="top"><div class="top-in">
     <div class="brand"><div class="mark">C6</div><div><h1>Prévia C6</h1></div></div>
     <div class="status ${st.encerrado?'closed':''}"><span class="dot"></span><span>${st.encerrado?'Prévias de hoje encerradas':`${st.slot.rotulo} · até ${st.slot.limite} · faltam ${fmtFalta(st.falta)}`}</span></div>
     <div class="spacer"></div>
-    <div class="who"><b>${esc(S.user.nome)}</b>${S.user.papel==='gerente'?'Gerente':S.user.tipo==='pj'?'Vendedor Corban':'Vendedor próprio'} · ${diaSemana(hoje())} ${brShort(hoje())} ${hm(d)}</div>
+    <div class="who"><b>${esc(S.user.nome)}</b>${S.user.papel==='gerente'?'Admin':S.user.papel==='coordenador'?'Coordenador(a)':S.user.tipo==='pj'?'Vendedor Corban':'Vendedor próprio'} · ${diaSemana(hoje())} ${brShort(hoje())} ${hm(d)}</div>
     <button class="btn ghost sm" id="sair">Sair</button>
   </div>
   <nav class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}</button>`).join('')}</nav></header>`;
@@ -499,8 +541,8 @@ function viewEnviar(){
   const sel=SLOTS[S.previa-1]; const atual=envioDe(S.user.id,dia,sel.n);
   const nowMin=now.getHours()*60+now.getMinutes(); const atrasado = nowMin>minutos(sel.limite);
   const anterior = null;
-  const gerente = S.user.papel==='gerente';
-  return `${gerente?`<div class="card"><p class="muted">Você está logado como gerente. O envio de prévia é feito pelos vendedores; use o <b>Painel geral</b> e a <b>Gerência</b>.</p></div>`:''}
+  const gerente = !enviaPrevia(S.user);
+  return `${gerente?`<div class="card"><p class="muted">Seu perfil não envia prévia (isso é feito pelos vendedores). Use o <b>Painel geral</b>, o <b>Mês</b> e a <b>Gerência</b>. Em <b>Acessos</b> dá pra ligar "envia prévia" no seu usuário.</p></div>`:''}
   <div class="grid2">
   <section class="card">
     <div class="card-h"><div><div class="eyebrow">Hoje · ${diaSemana(dia)} ${brDate(dia)}</div><h2>Enviar prévia de pagamentos</h2></div></div>
@@ -528,6 +570,9 @@ function viewEnviar(){
     ${(()=>{ const u=ultimoDe(S.user.id,dia); return `<div class="total-box" style="margin-top:14px;padding:14px;border-radius:12px"><div class="eyebrow">Seu total produzido hoje</div>
       <div class="total-grid"><div><div class="tv accent">${u?fmtBRL(u.valor):'R$ 0,00'}</div><div class="note">valor pago</div></div><div><div class="tv">${u?u.contratos:0}</div><div class="note">contratos</div></div><div><div class="tv">${u?u.seguros:0}</div><div class="note">seguros</div></div></div>
       <p class="note">${u?`Soma das ${u.n} prévia${u.n===1?'':'s'} enviada${u.n===1?'':'s'} hoje (última: ${SLOTS[u.previa-1].rotulo} às ${u.hora}).`:'Nenhuma prévia enviada ainda hoje.'}</p></div>`; })()}
+    ${(()=>{ const D=dadosMes(hoje().slice(0,7),[S.user]); const x=D.porV[0]; return `<div class="total-box" style="margin-top:10px;padding:14px;border-radius:12px"><div class="eyebrow">Seu mês · ${new Date().toLocaleDateString('pt-BR',{month:'long'})}</div>
+      <div class="total-grid"><div><div class="tv">${fmtBRL(x.v)}</div><div class="note">produzido no mês</div></div><div><div class="tv">${x.c}</div><div class="note">contratos</div></div><div><div class="tv">${x.sg}</div><div class="note">seguros</div></div></div>
+      <p class="note">${x.dias} dia${x.dias===1?'':'s'} com envio · média ${fmtBRL0(x.dias?x.v/x.dias:0)} por dia${x.atr?` · <span style="color:var(--warn)">${x.atr} envio${x.atr===1?'':'s'} atrasado${x.atr===1?'':'s'}</span>`:''}</p></div>`; })()}
     <div style="margin-top:16px" class="list">
       <div class="eyebrow">Como funciona</div>
       <div class="row"><span>1ª prévia</span><span class="muted">enviar até <b class="tnum">10:40</b></span></div>
@@ -594,6 +639,11 @@ function viewPainel(){
           <td class="r"><span class="val">${l.ult?fmtBRL(l.ult.valor):'—'}</span><span class="sub">${l.ult?`${l.ult.contratos} contratos · ${l.ult.seguros} seguros`:'sem envio'}</span></td></tr>`; }).join('')}</tbody>
         <tfoot><tr><td class="name">Total · ${lista.length} vendedores</td>${porSlot.map(t=>`<td class="r"><span class="val">${fmtBRL(t.v)}</span><span class="sub">${t.c}c · ${t.sg}s · ${t.n} envios</span></td>`).join('')}<td class="r"><span class="val">${fmtBRL(r.valor)}</span><span class="sub">${r.contratos} contratos · ${r.seguros} seguros</span></td></tr></tfoot>
       </table></div>
+      <div class="mcards">${linhas.map((l,i)=>{ const pend=!envioDe(l.u.id,dia,r.ref.n); return `<div class="mcard ${pend?'pend':''} ${l.u.id===S.user.id?'me':''}">
+        <div class="mc-top"><span class="rank">${i+1}</span><b>${esc(l.u.nome)}</b><span class="pill ${l.u.tipo}">${l.u.tipo==='pj'?'Corban':'Próprio'}</span>${pend?`<span class="pill miss">pendente</span>`:''}</div>
+        <div class="mc-tot"><div><div class="eyebrow">Total do dia</div><div class="mc-v">${l.ult?fmtBRL(l.ult.valor):'—'}</div></div><div class="mc-cs">${l.ult?`<b>${l.ult.contratos}</b> contratos<br><b>${l.ult.seguros}</b> seguros`:'<span class="faint">sem envio</span>'}</div></div>
+        <div class="mc-slots">${SLOTS.map(s=>{ const e=l.es[s.n-1]; const aberto=dia===hoje()&&(new Date().getHours()*60+new Date().getMinutes())<=minutos(s.limite); return `<div class="mc-slot ${e?(e.atrasado?'late':'ok'):aberto?'':'miss'}"><div class="mc-sl">${s.n}ª <span>${e?e.hora:aberto?'aberta':'não enviou'}</span></div><div class="mc-sv">${e?fmtBRL0(e.valor):'—'}</div><div class="mc-sc">${e?`${e.contratos}c · ${e.seguros}s`:''}</div></div>`; }).join('')}</div>
+      </div>`; }).join('')}</div>
     </section>
     <section class="card total-box">
       <div class="card-h"><div><div class="eyebrow">Somatório do dia · ${S.filtro==='todos'?'toda a equipe':S.filtro==='pj'?'Corban':'próprios'}${S.busca?' · filtrado':''}</div><h2>Total produzido em ${brDate(dia)}</h2></div><span class="muted">${lista.length} vendedor${lista.length===1?'':'es'}</span></div>
@@ -689,24 +739,77 @@ function viewGerencia(){
       :`<p class="note">Escolha um vendedor para ver o histórico dia a dia, com horário de cada prévia, atrasos e total do período.</p>`}
     </section>
   </div>
-  <section class="card"><div class="card-h"><div><h2>Vendedores</h2><p class="note">${lista.length} ativos · ${lista.filter(u=>u.tipo==='interno').length} próprios · ${lista.filter(u=>u.tipo==='pj').length} Corban</p></div></div>
-    <form id="fNovo" class="list" style="gap:8px;margin-bottom:12px">
-      <div class="eyebrow">Cadastrar vendedor</div>
-      <div class="grid3"><div class="field"><input id="nvNome" placeholder="Nome completo" required></div><div class="field"><select id="nvTipo"><option value="interno">Próprio</option><option value="pj">Corban (terceirizada)</option></select></div><button class="btn primary" type="submit">Cadastrar</button></div>
-      <p class="note">Usuário e senha inicial (1234) são gerados automaticamente a partir do nome.</p>
-    </form>
-    <div class="tablewrap" style="max-height:340px;overflow:auto"><table style="min-width:0"><thead><tr><th class="name">Nome</th><th>Usuário</th><th>Tipo</th><th></th></tr></thead>
-    <tbody>${DB.users.filter(u=>u.papel==='vendedor').sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR')).map(u=>`<tr style="${u.ativo===false?'opacity:.5':''}"><td class="name"><b>${esc(u.nome)}</b></td><td class="muted">${esc(u.login)}</td><td><span class="pill ${u.tipo}">${u.tipo==='pj'?'Corban':'Próprio'}</span></td><td><button class="btn sm ghost" data-toggle="${u.id}">${u.ativo===false?'Reativar':'Desativar'}</button></td></tr>`).join('')}</tbody></table></div>
-  </section>`;
+  `;
 }
 function bindGerencia(){
   document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
   document.querySelectorAll('#cd [data-n]').forEach(b=>b.onclick=()=>{ S.chartDias=Number(b.dataset.n); render(); });
   document.getElementById('vendSel').onchange=e=>{ S.vendSel=e.target.value||null; render(); };
-  document.getElementById('fNovo').addEventListener('submit',e=>{ e.preventDefault(); const nome=document.getElementById('nvNome').value.trim(); if(!nome) return; let login=loginDe(nome); let k=2; while(DB.users.some(u=>u.login===login)) login=loginDe(nome)+(k++);
-    DB.users.push({ id:uid(), nome, login, senha:'1234', tipo:document.getElementById('nvTipo').value, papel:'vendedor', ativo:true }); salvar(); toast(`${nome} cadastrado · usuário ${login}`); render(); });
-  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{ const u=DB.users.find(x=>x.id===b.dataset.toggle); u.ativo=u.ativo===false; salvar(); render(); });
 }
+/* ----- acessos (admin): usuários, perfis e liberação ----- */
+const ehAdmin = u => !!u && u.papel==='gerente';
+const enviaPrevia = u => !!u && u.ativo!==false && (u.papel==='vendedor' || u.vende===true);
+function papelLbl(u){ const b=u.papel==='gerente'?'Admin':u.papel==='coordenador'?'Coordenador(a)':'Vendedor(a)'; return u.papel!=='vendedor'&&u.vende?b+' · envia prévia':b; }
+function ctrlUsuario(u){
+  const eu=u.id===S.user.id;
+  return `<div class="uctl">
+    <label>Perfil <select data-act="papel" data-id="${u.id}" ${eu?'disabled title="Você não altera o próprio perfil"':''}><option value="vendedor" ${u.papel==='vendedor'?'selected':''}>Vendedor(a)</option><option value="coordenador" ${u.papel==='coordenador'?'selected':''}>Coordenador(a)</option><option value="gerente" ${u.papel==='gerente'?'selected':''}>Admin</option></select></label>
+    <label>Tipo <select data-act="tipo" data-id="${u.id}"><option value="interno" ${u.tipo==='interno'?'selected':''}>Próprio</option><option value="pj" ${u.tipo==='pj'?'selected':''}>Corban</option></select></label>
+    ${u.papel!=='vendedor'?`<label class="chk"><input type="checkbox" data-act="vende" data-id="${u.id}" ${u.vende?'checked':''}> envia prévia</label>`:''}
+    <button type="button" class="btn sm ghost" data-act="senha" data-id="${u.id}">Redefinir senha</button>
+    <button type="button" class="btn sm ${u.ativo===false?'primary':'ghost'}" data-act="ativo" data-id="${u.id}" ${eu?'disabled':''}>${u.ativo===false?'Liberar acesso':'Bloquear'}</button>
+  </div>`;
+}
+function viewAcessos(){
+  const us=DB.users.slice().sort((a,b)=>(a.papel===b.papel?0:a.papel==='gerente'?-1:1)||(a.ativo===false)-(b.ativo===false)||a.nome.localeCompare(b.nome,'pt-BR'));
+  const ativos=us.filter(u=>u.ativo!==false); const admins=ativos.filter(ehAdmin).length; const vend=ativos.filter(enviaPrevia).length; const bloq=us.length-ativos.length;
+  const q=chave(S.buscaU||''); const lista=q?us.filter(u=>chave(u.nome).includes(q)||chave(u.login).includes(q)):us;
+  return `<div class="kpis">
+      <div class="kpi"><div class="eyebrow">Usuários ativos</div><div class="v">${ativos.length}</div><div class="s">${bloq} bloqueado${bloq===1?'':'s'}</div></div>
+      <div class="kpi"><div class="eyebrow">Admins</div><div class="v">${admins}</div><div class="s">${ativos.filter(u=>u.papel==='coordenador').length} coordenador(es) veem Painel e Mês</div></div>
+      <div class="kpi"><div class="eyebrow">Enviam prévia</div><div class="v">${vend}</div><div class="s">${ativos.filter(u=>enviaPrevia(u)&&u.tipo==='interno').length} próprios · ${ativos.filter(u=>enviaPrevia(u)&&u.tipo==='pj').length} Corban</div></div>
+      <div class="kpi"><div class="eyebrow">Você</div><div class="v" style="font-size:18px">${esc(S.user.login)}</div><div class="s">${papelLbl(S.user)}</div></div>
+    </div>
+    <section class="card">
+      <div class="card-h"><div><h2>Novo usuário</h2><p class="note">Crie o acesso e passe usuário e senha para a pessoa. Ela pode trocar a senha em "Esqueci a senha".</p></div></div>
+      <form id="fUser" class="uform">
+        <div class="field"><label for="uLogin">Usuário</label><input id="uLogin" autocapitalize="none" spellcheck="false" placeholder="ex.: maria.silva" required></div>
+        <div class="field"><label for="uNome">Nome completo</label><input id="uNome" placeholder="ex.: Maria Silva" required></div>
+        <div class="field"><label for="uPapel">Perfil</label><select id="uPapel"><option value="vendedor">Vendedor(a)</option><option value="coordenador">Coordenador(a)</option><option value="gerente">Admin</option></select></div>
+        <div class="field"><label for="uTipo">Tipo</label><select id="uTipo"><option value="interno">Próprio</option><option value="pj">Corban</option></select></div>
+        <div class="field"><label for="uSenha">Senha inicial</label><input id="uSenha" value="1234" autocapitalize="none"></div>
+        <div class="field" style="align-self:end"><button class="btn primary block" type="submit">Criar acesso</button></div>
+      </form>
+      <div class="err hide" id="uErr" style="margin-top:8px"></div>
+    </section>
+    <section class="card">
+      <div class="card-h"><div><h2>Usuários e permissões</h2><p class="note">Perfil, tipo, quem envia prévia, bloqueio e senha. As mudanças valem na hora.</p></div><input type="search" id="buscaU" placeholder="Buscar usuário" value="${esc(S.buscaU||'')}" style="padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px"></div>
+      <div class="ulist">${lista.map(u=>`<div class="urow ${u.ativo===false?'dim':''} ${u.id===S.user.id?'me':''}">
+        <div class="uinfo"><b>${esc(u.nome)}</b><span class="muted">${esc(u.login)}</span><span class="chips"><span class="pill ${u.papel==='gerente'?'int':'neutral'}">${papelLbl(u)}</span><span class="pill ${u.tipo}">${u.tipo==='pj'?'Corban':'Próprio'}</span>${u.ativo===false?'<span class="pill miss">bloqueado</span>':''}${u.id===S.user.id?'<span class="pill ok">você</span>':''}</span></div>
+        ${ctrlUsuario(u)}
+      </div>`).join('')}</div>
+    </section>`;
+}
+function bindAcessos(){
+  const $=id=>document.getElementById(id);
+  const bs=$('buscaU'); bs.oninput=()=>{ S.buscaU=bs.value; const pos=bs.selectionStart; render(); const nb=$('buscaU'); nb.focus(); nb.setSelectionRange(pos,pos); };
+  $('uNome').addEventListener('input',()=>{ if(!$('uLogin').dataset.tocado) $('uLogin').value=normLogin($('uNome').value.trim().split(/\s+/).filter(Boolean).filter((p,i,a)=>i===0||i===a.length-1).join('.')); });
+  $('uLogin').addEventListener('input',()=>{ $('uLogin').dataset.tocado='1'; });
+  $('fUser').addEventListener('submit',e=>{ e.preventDefault(); const erro=m=>{ $('uErr').textContent=m; $('uErr').classList.toggle('hide',!m); };
+    const login=normLogin($('uLogin').value); const nome=$('uNome').value.trim().replace(/\s+/g,' '); const senha=$('uSenha').value;
+    if(login.length<3) return erro('Informe o usuário (ex.: maria.silva).'); if(nome.split(' ').length<2) return erro('Informe nome e sobrenome.'); if(senha.length<4) return erro('Senha inicial com pelo menos 4 caracteres.');
+    if(DB.users.some(u=>normLogin(u.login)===login)) return erro(`O usuário "${login}" já existe.`);
+    const papel=$('uPapel').value; DB.users.push({ id:uid(), nome, login, senha, senhaOk:false, papel, tipo:$('uTipo').value, vende:papel!=='vendedor'?false:undefined, ativo:true }); salvar(); toast(`Acesso criado: ${login} · senha ${senha}`); render(); });
+  document.querySelectorAll('[data-act]').forEach(el=>{ const u=DB.users.find(x=>x.id===el.dataset.id); if(!u) return;
+    const act=el.dataset.act;
+    if(act==='papel') el.onchange=()=>{ u.papel=el.value; if(u.papel!=='vendedor'&&u.vende===undefined) u.vende=false; salvar(); toast(`${u.nome}: perfil ${u.papel==='gerente'?'Admin':u.papel==='coordenador'?'Coordenador(a)':'Vendedor(a)'}`); render(); };
+    if(act==='tipo') el.onchange=()=>{ u.tipo=el.value; salvar(); render(); };
+    if(act==='vende') el.onchange=()=>{ u.vende=el.checked; salvar(); toast(`${u.nome} ${u.vende?'passa a enviar prévia':'não envia mais prévia'}`); render(); };
+    if(act==='ativo') el.onclick=()=>{ if(u.ativo!==false && !confirm(`Bloquear o acesso de ${u.nome}? A pessoa não consegue mais entrar até ser liberada.`)) return; u.ativo=u.ativo===false; salvar(); toast(`${u.nome}: ${u.ativo?'acesso liberado':'acesso bloqueado'}`); render(); };
+    if(act==='senha') el.onclick=()=>{ const pw=prompt(`Nova senha para ${u.nome} (mínimo 4 caracteres):`, '1234'); if(pw===null) return; if(pw.length<4) return toast('Senha muito curta.'); u.senha=pw; u.senhaOk=false; salvar(); toast(`Senha de ${u.login} redefinida para ${pw}`); };
+  });
+}
+
 /* ----- relatório do mês ----- */
 function diasUteisDoMes(ym){ const [Y,M]=ym.split('-').map(Number); const out=[]; const d=new Date(Y,M-1,1); while(d.getMonth()===M-1){ const wd=d.getDay(); if(wd!==0&&wd!==6) out.push(isoDate(d)); d.setDate(d.getDate()+1); } return out; }
 function dadosMes(ym, lista){
@@ -754,6 +857,12 @@ function viewMes(){
         <tbody>${D.linhas.map(l=>{ const futuro=l.dia>hj; const semNada=!futuro&&l.env===0; return `<tr class="${futuro?'':''}" style="${futuro?'opacity:.45':''}"><td class="name"><b>${brShort(l.dia)}</b> <span class="faint">${diaSemana(l.dia)}</span>${l.dia===hj?' <span class="pill neutral">hoje</span>':''}${semNada?' <span class="pill miss">sem envios</span>':''}</td>${l.ps.map(p=>`<td class="r">${p.n?`<span class="val">${fmtBRL(p.v)}</span><span class="sub">${p.c}c · ${p.sg}s · ${p.n} env.${p.atr?` · <span style="color:var(--warn)">${p.atr} atr.</span>`:''}</span>`:'<span class="faint">—</span>'}</td>`).join('')}<td class="r"><span class="val">${l.env?fmtBRL(l.tot.v):'—'}</span></td><td class="r tnum">${l.env?l.tot.c:'—'}</td><td class="r tnum">${l.env?l.tot.sg:'—'}</td><td class="r tnum">${l.env?`${l.env}/${lista.length}`:'—'}</td></tr>`; }).join('')}</tbody>
         <tfoot><tr><td class="name">Total do mês</td>${SLOTS.map((s,i)=>{ const v=D.linhas.reduce((a,l)=>a+l.ps[i].v,0), c=D.linhas.reduce((a,l)=>a+l.ps[i].c,0), sg=D.linhas.reduce((a,l)=>a+l.ps[i].sg,0); return `<td class="r"><span class="val">${fmtBRL(v)}</span><span class="sub">${c}c · ${sg}s</span></td>`; }).join('')}<td class="r"><span class="val">${fmtBRL(D.T.v)}</span></td><td class="r tnum">${D.T.c}</td><td class="r tnum">${D.T.sg}</td><td class="r tnum">${diasPassados} dias</td></tr></tfoot>
       </table></div>
+      <div class="mcards">${D.linhas.filter(l=>l.dia<=hj).slice().reverse().map(l=>`<div class="mcard ${l.env?'':'dim'}">
+        <div class="mc-top"><b>${brShort(l.dia)} <span class="faint">${diaSemana(l.dia)}</span></b>${l.dia===hj?'<span class="pill neutral">hoje</span>':''}${!l.env?'<span class="pill miss">sem envios</span>':''}</div>
+        ${l.env?`<div class="mc-tot"><div><div class="eyebrow">Total do dia</div><div class="mc-v">${fmtBRL(l.tot.v)}</div></div><div class="mc-cs"><b>${l.tot.c}</b> contratos<br><b>${l.tot.sg}</b> seguros<br>${l.env}/${lista.length} enviaram</div></div>
+        <div class="mc-slots">${l.ps.map((p,i)=>`<div class="mc-slot ${p.n?'ok':'miss'}"><div class="mc-sl">${i+1}ª <span>${p.n} env.</span></div><div class="mc-sv">${p.n?fmtMil(p.v):'—'}</div><div class="mc-sc">${p.n?`${p.c}c · ${p.sg}s`:''}</div></div>`).join('')}</div>`:''}
+      </div>`).join('')}</div>
+      <div class="mcards"><div class="mcard total"><div class="mc-top"><b>Total do mês</b></div><div class="mc-tot"><div><div class="mc-v">${fmtBRL(D.T.v)}</div></div><div class="mc-cs"><b>${D.T.c}</b> contratos<br><b>${D.T.sg}</b> seguros<br>${diasPassados} dias</div></div></div></div>
     </section>
     <section class="card">
       <div class="card-h"><div><h2>Por vendedor no mês</h2><p class="note">Soma de todas as prévias do mês. Ordenado pelo total.</p></div><span class="muted">${D.porV.filter(x=>x.n).length} de ${lista.length} com envio</span></div>
@@ -762,6 +871,10 @@ function viewMes(){
         <tbody>${D.porV.map((x,i)=>`<tr class="${x.u.id===S.user.id?'me':''}"><td class="name"><span class="rank">${i+1}</span> <b>${esc(x.u.nome)}</b><span class="sub"><span class="pill ${x.u.tipo}">${x.u.tipo==='pj'?'Corban':'Próprio'}</span></span></td><td class="r"><span class="val">${fmtBRL(x.v)}</span></td><td class="r tnum">${x.c}</td><td class="r tnum">${x.sg}</td><td class="r tnum">${fmtBRL0(x.dias?x.v/x.dias:0)}</td><td class="r tnum">${x.dias}/${diasPassados}</td><td class="r">${x.atr?`<span class="pill late">${x.atr}</span>`:'<span class="faint">0</span>'}</td><td class="r tnum">${D.T.v?(x.v/D.T.v*100).toFixed(1).replace('.',','):'0'}%</td></tr>`).join('')}</tbody>
         <tfoot><tr><td class="name">Total · ${lista.length} vendedores</td><td class="r"><span class="val">${fmtBRL(D.T.v)}</span></td><td class="r tnum">${D.T.c}</td><td class="r tnum">${D.T.sg}</td><td class="r tnum">${fmtBRL0(mediaDia)}</td><td class="r tnum">${diasPassados}</td><td class="r tnum">${D.T.atr}</td><td class="r tnum">100%</td></tr></tfoot>
       </table></div>
+      <div class="mcards">${D.porV.map((x,i)=>`<div class="mcard ${x.u.id===S.user.id?'me':''} ${x.n?'':'dim'}">
+        <div class="mc-top"><span class="rank">${i+1}</span><b>${esc(x.u.nome)}</b><span class="pill ${x.u.tipo}">${x.u.tipo==='pj'?'Corban':'Próprio'}</span>${x.atr?`<span class="pill late">${x.atr} atraso${x.atr===1?'':'s'}</span>`:''}</div>
+        <div class="mc-tot"><div><div class="eyebrow">Total no mês · ${D.T.v?(x.v/D.T.v*100).toFixed(1).replace('.',','):'0'}%</div><div class="mc-v">${fmtBRL(x.v)}</div></div><div class="mc-cs"><b>${x.c}</b> contratos<br><b>${x.sg}</b> seguros<br>${x.dias}/${diasPassados} dias · média ${fmtBRL0(x.dias?x.v/x.dias:0)}</div></div>
+      </div>`).join('')}</div>
     </section>`;
 }
 function csvMes(){
