@@ -534,11 +534,14 @@ function bindShell(){
 }
 
 /* ----- enviar ----- */
+const JANELA_EDICAO_MS = 2*60*60*1000;
+const podeEditar = e => !e || ehAdmin(S.user) || (Date.now()-(e.ts0||e.ts||0)) < JANELA_EDICAO_MS;
+const limiteEdicao = e => hm(new Date((e.ts0||e.ts||0)+JANELA_EDICAO_MS));
 function viewEnviar(){
   const now=new Date(); const st=slotAtual(now); const dia=hoje();
   if(!S.previa) S.previa=st.slot.n;
   const meus = SLOTS.map(s=>({s, e:envioDe(S.user.id,dia,s.n)}));
-  const sel=SLOTS[S.previa-1]; const atual=envioDe(S.user.id,dia,sel.n);
+  const sel=SLOTS[S.previa-1]; const atual=envioDe(S.user.id,dia,sel.n); const travada = !!atual && !podeEditar(atual);
   const nowMin=now.getHours()*60+now.getMinutes(); const atrasado = nowMin>minutos(sel.limite);
   const anterior = null;
   const gerente = !enviaPrevia(S.user);
@@ -550,22 +553,24 @@ function viewEnviar(){
       <div class="slotpick">${SLOTS.map(s=>{ const e=envioDe(S.user.id,dia,s.n); const lim=minutos(s.limite); const cls=[S.previa===s.n?'on':'', e?(e.atrasado?'late':'done'):''].join(' ');
         const stt = e?`${e.atrasado?'⚠ enviada às':'✓ enviada às'} ${e.hora}` : nowMin>lim?'não enviada · fora do prazo' : nowMin>lim-60?`aberta · faltam ${fmtFalta(lim-nowMin)}`:'aberta';
         return `<button type="button" class="slot ${cls}" data-slot="${s.n}"><b>${s.rotulo}</b><small>até ${s.limite}</small><small class="st">${stt}</small></button>`; }).join('')}</div>
-      <div class="deadline ${atrasado?'late':'ok'}">${atrasado?`⚠ O prazo da ${sel.rotulo} (${sel.limite}) já passou. O envio será registrado como <b>atrasado</b>.`:`✓ Dentro do prazo da ${sel.rotulo}. Limite ${sel.limite} · faltam ${fmtFalta(minutos(sel.limite)-nowMin)}.`}</div>
+      ${travada?`<div class="deadline late">🔒 Esta prévia foi enviada às ${atual.hora} e a janela de correção (2 h, até ${limiteEdicao(atual)}) já fechou. Se precisar corrigir, fale com o admin.</div>`:''}
+      <div class="deadline ${atrasado?'late':'ok'}" ${travada?'style="display:none"':''}>${atrasado?`⚠ O prazo da ${sel.rotulo} (${sel.limite}) já passou. O envio será registrado como <b>atrasado</b>.`:`✓ Dentro do prazo da ${sel.rotulo}. Limite ${sel.limite} · faltam ${fmtFalta(minutos(sel.limite)-nowMin)}.`}</div>
       <form id="fEnvio" class="list" style="gap:12px">
-        <div class="field"><label for="valor">Valor pago nesta prévia (desde a prévia anterior)</label><input id="valor" class="big" inputmode="decimal" placeholder="R$ 0,00" value="${atual?fmtBRL(atual.valor):''}" ${gerente?'disabled':''}></div>
+        <div class="field"><label for="valor">Valor pago nesta prévia (desde a prévia anterior)</label><input id="valor" class="big" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" value="${atual?fmtBRL(atual.valor):''}" ${gerente||travada?'disabled':''}></div>
         <div class="grid2" style="gap:12px">
-          <div class="field"><label for="contratos">Contratos pagos</label><input id="contratos" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.contratos:''}" ${gerente?'disabled':''}></div>
-          <div class="field"><label for="seguros">Seguros pagos</label><input id="seguros" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.seguros:''}" ${gerente?'disabled':''}></div>
+          <div class="field"><label for="contratos">Contratos pagos</label><input id="contratos" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.contratos:''}" ${gerente||travada?'disabled':''}></div>
+          <div class="field"><label for="seguros">Seguros pagos</label><input id="seguros" type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${atual?atual.seguros:''}" ${gerente||travada?'disabled':''}></div>
         </div>
         <div class="note">Informe só o que foi pago neste período. O total do dia soma as 3 prévias. O horário é registrado automaticamente.</div>
-        <button class="btn primary block" type="submit" ${gerente?'disabled':''}>${atual?`Atualizar ${sel.rotulo}`:`Enviar ${sel.rotulo}`} · ${hm(now)}</button>
+        <button class="btn primary block" type="submit" ${gerente||travada?'disabled':''}>${travada?`🔒 ${sel.rotulo} bloqueada para edição`:atual?`✎ Salvar correção da ${sel.rotulo}`:`Enviar ${sel.rotulo}`} · ${hm(now)}</button>
+        ${atual&&!travada?`<p class="note">Você pode corrigir esta prévia até <b>${limiteEdicao(atual)}</b> (2 h depois do envio). Depois disso ela fica travada.</p>`:''}
       </form>
     </div>
   </section>
   <section class="card">
     <div class="card-h"><h2>Seus envios de hoje</h2><span class="muted">${meus.filter(x=>x.e).length} de 3</span></div>
     <div class="mine">${meus.map(({s,e})=>`<div class="mini"><div class="eyebrow">${s.rotulo} · ${s.limite}</div>
-      ${e?`<div class="v">${fmtBRL(e.valor)}</div><div class="muted" style="font-size:13px">${e.contratos} contrato${e.contratos===1?'':'s'} · ${e.seguros} seguro${e.seguros===1?'':'s'}</div><div><span class="pill ${e.atrasado?'late':'ok'}">${e.atrasado?'⚠ atrasada':'✓ no prazo'} · ${e.hora}</span></div>`
+      ${e?`<div class="v">${fmtBRL(e.valor)}</div><div class="muted" style="font-size:13px">${e.contratos} contrato${e.contratos===1?'':'s'} · ${e.seguros} seguro${e.seguros===1?'':'s'}</div><div><span class="pill ${e.atrasado?'late':'ok'}">${e.atrasado?'⚠ atrasada':'✓ no prazo'} · ${e.hora}</span>${e.editadoEm?` <span class="pill neutral">✎ corrigida ${e.editadoEm}</span>`:''}</div>${podeEditar(e)?`<div><button type="button" class="btn sm ghost" data-edit="${s.n}">✎ Editar</button> <span class="note">até ${limiteEdicao(e)}</span></div>`:`<div class="note">🔒 edição encerrada às ${limiteEdicao(e)}</div>`}`
          :`<div class="v faint">—</div><div><span class="pill ${nowMin>minutos(s.limite)?'miss':'neutral'}">${nowMin>minutos(s.limite)?'não enviada':'aguardando'}</span></div>`}</div>`).join('')}</div>
     ${(()=>{ const u=ultimoDe(S.user.id,dia); return `<div class="total-box" style="margin-top:14px;padding:14px;border-radius:12px"><div class="eyebrow">Seu total produzido hoje</div>
       <div class="total-grid"><div><div class="tv accent">${u?fmtBRL(u.valor):'R$ 0,00'}</div><div class="note">valor pago</div></div><div><div class="tv">${u?u.contratos:0}</div><div class="note">contratos</div></div><div><div class="tv">${u?u.seguros:0}</div><div class="note">seguros</div></div></div>
@@ -584,9 +589,11 @@ function viewEnviar(){
 }
 function bindEnviar(){
   document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.slot); render(); });
+  document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{ S.previa=Number(b.dataset.edit); render(); const v2=document.getElementById('valor'); v2.focus(); window.scrollTo({top:0,behavior:'smooth'}); });
   const v=document.getElementById('valor');
-  v.addEventListener('blur',()=>{ const n=parseBRL(v.value); v.value = n?fmtBRL(n):''; });
-  v.addEventListener('focus',()=>{ if(v.value) v.value=String(parseBRL(v.value)).replace('.',','); });
+  // máscara ao vivo: digita só números, o campo mostra R$ 1.234,56 (os 2 últimos dígitos são centavos)
+  const mascara=()=>{ const d=v.value.replace(/[^0-9]/g,'').replace(/^0+(?=[0-9])/,''); v.value = d ? fmtBRL(Number(d)/100) : ''; try{ v.setSelectionRange(v.value.length,v.value.length); }catch(e){} };
+  v.addEventListener('input',mascara);
   document.getElementById('fEnvio').addEventListener('submit',e=>{
     e.preventDefault(); if(S.user.papel==='gerente') return;
     const valor=parseBRL(v.value); const contratos=Number(document.getElementById('contratos').value||0); const seguros=Number(document.getElementById('seguros').value||0);
@@ -594,9 +601,10 @@ function bindEnviar(){
     if(valor===0 && contratos===0 && !confirm('Enviar a prévia zerada (R$ 0,00 e 0 contratos)? Ela entra como zero na soma do dia.')) return;
     const now=new Date(); const sel=SLOTS[S.previa-1]; const atrasado=(now.getHours()*60+now.getMinutes())>minutos(sel.limite);
     const ex=envioDe(S.user.id,hoje(),sel.n);
-    const reg={ id:ex?ex.id:uid(), userId:S.user.id, data:hoje(), previa:sel.n, valor, contratos, seguros, hora:hm(now), atrasado, ts:Date.now() };
+    if(ex && !podeEditar(ex)){ toast('Esta prévia já não pode ser editada (janela de 2 h).'); return; }
+    const reg= ex ? { valor, contratos, seguros, editadoEm:hm(now), ts:Date.now(), ts0:ex.ts0||ex.ts } : { id:uid(), userId:S.user.id, data:hoje(), previa:sel.n, valor, contratos, seguros, hora:hm(now), atrasado, ts:Date.now(), ts0:Date.now() };
     if(ex) Object.assign(ex,reg); else DB.envios.push(reg);
-    salvar(); toast(`${sel.rotulo} ${ex?'atualizada':'enviada'} às ${hm(now)} ${atrasado?'(atrasada)':'✓'}`); render();
+    salvar(); toast(ex?`${sel.rotulo} corrigida às ${hm(now)} ✓`:`${sel.rotulo} enviada às ${hm(now)} ${atrasado?'(atrasada)':'✓'}`); render();
   });
 }
 
@@ -608,7 +616,7 @@ function listaFiltrada(){
 }
 function cellEnvio(e, s, dia){
   if(!e){ const aberto = dia===hoje() && (new Date().getHours()*60+new Date().getMinutes())<=minutos(s.limite); return `<td class="r ${aberto?'':'miss'}"><span class="val ${aberto?'faint':''}">${aberto?'—':'—'}</span><span class="sub">${aberto?'aguardando':'não enviou'}</span></td>`; }
-  return `<td class="r"><span class="val">${fmtBRL(e.valor)}</span><span class="sub">${e.contratos}c · ${e.seguros}s · <span class="pill ${e.atrasado?'late':'ok'}" style="padding:0 5px">${e.hora}</span></span></td>`;
+  return `<td class="r"><span class="val">${fmtBRL(e.valor)}</span><span class="sub">${e.contratos}c · ${e.seguros}s · <span class="pill ${e.atrasado?'late':'ok'}" style="padding:0 5px">${e.hora}</span>${e.editadoEm?' ✎':''}</span></td>`;
 }
 function viewPainel(){
   const dia=S.dia; const lista=listaFiltrada(); const r=resumoDia(dia,lista);
