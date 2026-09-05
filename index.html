@@ -281,6 +281,20 @@ html,body{max-width:100%;overflow-x:hidden}
 .uctl select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:13px;color:var(--ink)}
 .uctl label{display:flex;align-items:center;gap:5px} .uctl .chk input{width:16px;height:16px}
 .mcard.total .mc-cs b{color:var(--bg)}
+/* entregas do dia (gerência) */
+.entregas{border-width:2px;border-color:var(--ink)}
+.ent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:820px){.ent-grid{grid-template-columns:1fr}}
+.ent{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:6px;background:var(--surface)}
+.ent.aberta{border-color:var(--pos);box-shadow:0 0 0 2px var(--pos-soft)}
+.ent.vazia{opacity:.6}
+.ent-h{display:flex;justify-content:space-between;align-items:center;gap:8px} .ent-h b{font-family:var(--display);font-size:16px}
+.ent-v{font-family:var(--display);font-weight:700;font-size:28px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.ent-sub{font-size:13px;color:var(--muted);margin-bottom:4px}
+.ent-linha{display:flex;justify-content:space-between;gap:8px;font-size:13px;border-top:1px solid var(--line);padding-top:6px} .ent-linha span{color:var(--muted)} .ent-linha b{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.ent-cmp{font-size:13px;font-weight:600;padding:6px 0} .ent-cmp.up{color:var(--pos)} .ent-cmp.down{color:var(--bad)}
+.ent-total{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--ink);color:var(--bg)} .ent-total b{font-family:var(--display);font-size:24px;font-variant-numeric:tabular-nums} .ent-total .muted{color:var(--bg);opacity:.8}
+@media(max-width:640px){.ent-v{font-size:24px}.ent-total b{font-size:20px}}
 </style>
 
 <div id="app"></div>
@@ -299,7 +313,7 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.17';
+const APP_VERSION = 'v2026-09-04.18';
 const KEY = 'previa_c6_v2';
 
 const Store = {
@@ -697,6 +711,9 @@ function viewGerencia(){
   const comEnvio=ranking.length; const ticket=r.contratos?r.valor/r.contratos:0; const porVend=comEnvio?r.valor/comEnvio:0;
   const porTipo=['interno','pj'].map(t=>{ const l=lista.filter(u=>u.tipo===t); const rr=resumoDia(dia,l); const ce=l.filter(u=>ultimoDe(u.id,dia)).length; return {t,l,rr,ce}; });
   const ritmo=SLOTS.map(s=>{ let v=0,c=0,sg=0,n=0; for(const u of lista){ const e=envioDe(u.id,dia,s.n); if(e){v+=e.valor;c+=e.contratos;sg+=e.seguros;n++;} } return {s,v,c,sg,n}; });
+  const ontem=diasUteisAte(dia,2)[0]; const acumAte=(d,n)=>{ let v=0,c=0,sg=0; for(const u of lista) for(const s of SLOTS){ if(s.n>n) break; const e=envioDe(u.id,d,s.n); if(e){v+=e.valor;c+=e.contratos;sg+=e.seguros;} } return {v,c,sg}; };
+  const entregas=SLOTS.map((s,i)=>{ const p=ritmo[i]; const acum=acumAte(dia,s.n); const ont=ontem!==dia?acumAte(ontem,s.n):{v:0,c:0,sg:0}; const hist=dias.filter(d=>d!==dia).map(d=>acumAte(d,s.n).v).filter(v=>v>0); const med=hist.length?hist.reduce((a,b)=>a+b,0)/hist.length:0; const encerrada=!eHoje||nowMin>minutos(s.limite); const porTipoAcum=['interno','pj'].map(t=>{ let v=0,c=0; for(const u of lista){ if(u.tipo!==t) continue; for(const x of SLOTS){ if(x.n>s.n) break; const e=envioDe(u.id,dia,x.n); if(e){v+=e.valor;c+=e.contratos;} } } return {t,v,c}; }); return {s,p,acum,ont,med,encerrada,porTipoAcum}; });
+  S.__entregas={entregas,dia,lista,ontem};
   const atencao=lista.map(u=>({u,e:ultimoDe(u.id,dia)})).filter(x=>!x.e||x.e.valor===0);
   const atrasos=(()=>{ const m=new Map(); for(const d of dias) for(const u of lista) for(const s of SLOTS){ const e=envioDe(u.id,d,s.n); if(e&&e.atrasado) m.set(u.id,(m.get(u.id)||0)+1); } return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5); })();
   const sel=S.vendSel? DB.users.find(u=>u.id===S.vendSel) : null;
@@ -721,11 +738,28 @@ function viewGerencia(){
     <div class="kpi"><div class="eyebrow">Seguros</div><div class="v">${r.seguros}<span class="muted" style="font-size:14px;font-weight:500"> · ${r.contratos?Math.round(r.seguros/r.contratos*100):0}%</span></div><div class="s">dos contratos saíram com seguro</div></div>
     <div class="kpi"><div class="eyebrow">Média por vendedor</div><div class="v">${fmtBRL0(porVend)}</div><div class="s">entre ${comEnvio} com envio · ${lista.length-comEnvio} sem envio</div></div>
   </div>
+  <section class="card entregas">
+    <div class="card-h"><div><div class="eyebrow">Entregas do dia · total por horário</div><h2>Evolução de ${diaSemana(dia)} ${brDate(dia)}</h2></div><button class="btn sm primary" data-rep="atual">📋 Copiar reporte do momento</button></div>
+    <div class="ent-grid">${entregas.map((x,i)=>{ const dif=x.ont.v?x.acum.v-x.ont.v:null; const pct=x.ont.v?Math.round((x.acum.v/x.ont.v-1)*100):null; const temDados=x.p.n>0||x.acum.v>0; const aberta=eHoje&&!x.encerrada; const st=aberta?`aberta · até ${x.s.limite}`:x.encerrada?`encerrada ${x.s.limite}`:'';
+      return `<div class="ent ${aberta?'aberta':''} ${temDados?'':'vazia'}">
+        <div class="ent-h"><b>${x.s.rotulo}</b><span class="pill ${aberta?'ok':'neutral'}">${st}</span></div>
+        <div class="eyebrow">Acumulado até ${x.s.limite}</div>
+        <div class="ent-v">${temDados?fmtBRL(x.acum.v):'—'}</div>
+        <div class="ent-sub">${temDados?`${x.acum.c} contratos · ${x.acum.sg} seguros`:aberta?'aguardando envios':'sem envios'}</div>
+        <div class="ent-linha"><span>Neste período</span><b>${x.p.n?fmtBRL(x.p.v):'—'}</b></div>
+        <div class="ent-linha"><span>Enviaram</span><b>${x.p.n}/${lista.length}${x.p.atr!==undefined?'':''}</b></div>
+        <div class="ent-linha"><span>Próprios · Corban</span><b>${fmtBRL0(x.porTipoAcum[0].v)} · ${fmtBRL0(x.porTipoAcum[1].v)}</b></div>
+        <div class="ent-linha"><span>Ontem, mesmo horário</span><b>${x.ont.v?fmtBRL0(x.ont.v):'—'}</b></div>
+        <div class="ent-cmp ${pct===null?'':pct>=0?'up':'down'}">${pct===null?'sem comparação':`${pct>=0?'▲':'▼'} ${Math.abs(pct)}% (${dif>=0?'+':'−'}${fmtBRL0(Math.abs(dif))}) vs ontem`}${x.med?`<br><span class="faint">média dos últimos dias neste horário: ${fmtBRL0(x.med)}</span>`:''}</div>
+        <button class="btn sm ghost block" data-rep="${x.s.n}" ${temDados?'':'disabled'}>📋 Copiar reporte da ${x.s.rotulo}</button>
+      </div>`; }).join('')}</div>
+    <div class="ent-total"><span>Total do dia${eHoje?' até agora':''}</span><b>${fmtBRL(r.valor)}</b><span class="muted">${r.contratos} contratos · ${r.seguros} seguros · ${comEnvio}/${lista.length} com envio</span></div>
+    <p class="note">Acumulado = soma das prévias até aquele horário. O reporte copiado sai em texto pronto para WhatsApp ou e-mail.</p>
+  </section>
   <div class="grid2">
     <section class="card"><div class="card-h"><h2>Total produzido por dia</h2><div class="legend"><span><i></i>Próprios</span><span><i class="pj"></i>Corban</span><span>┅ média</span></div></div>${svg}<p class="note">Valor final do dia (última prévia de cada vendedor). • = hoje.${melhor?` Melhor dia do período: ${brShort(melhor.d)} com ${fmtBRL0(melhor.tot)} e ${melhor.c} contratos.`:''}</p></section>
-    <section class="card"><div class="card-h"><h2>Ritmo do dia</h2><span class="muted">o que a equipe pagou em cada período</span></div>
-      <div class="ritmo">${ritmo.map((x,i)=>{ const acum=ritmo.slice(0,i+1).reduce((a,y)=>a+y.v,0); const aberto=eHoje&&nowMin<=minutos(x.s.limite); return `<div class="step"><div class="eyebrow">${x.s.rotulo} · ${x.s.limite}</div><div class="v">${x.n?fmtBRL0(x.v):'—'}</div><div class="d">${x.n?`${x.c} contratos · ${x.sg} seguros`:aberto?'em aberto':'sem envios'}</div><div class="d">${x.n?`${x.n}/${lista.length} enviaram · acumulado até aqui ${fmtBRL0(acum)}`:''}</div></div>`; }).join('')}</div>
-      <div class="cmp" style="margin-top:12px">${porTipo.map(p=>`<div class="box"><div class="eyebrow">${tipoLbl(p.t)} · ${p.l.length} vendedores</div><div class="big num">${fmtBRL0(p.rr.valor)}</div><div class="note">${p.rr.contratos} contratos · ${p.rr.seguros} seguros · ticket ${fmtBRL0(p.rr.contratos?p.rr.valor/p.rr.contratos:0)}</div><div class="note">média ${fmtBRL0(p.ce?p.rr.valor/p.ce:0)} por vendedor com envio · ${p.rr.enviaram}/${p.l.length} na ${p.rr.ref.rotulo}</div><div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${r.valor?Math.round(p.rr.valor/r.valor*100):0}%"></div></div><div class="note">${r.valor?Math.round(p.rr.valor/r.valor*100):0}% do total do dia</div></div>`).join('')}</div>
+    <section class="card"><div class="card-h"><h2>Próprios × Corban</h2><span class="muted">${brShort(dia)}</span></div>
+      <div class="cmp">${porTipo.map(p=>`<div class="box"><div class="eyebrow">${tipoLbl(p.t)} · ${p.l.length} vendedores</div><div class="big num">${fmtBRL0(p.rr.valor)}</div><div class="note">${p.rr.contratos} contratos · ${p.rr.seguros} seguros · ticket ${fmtBRL0(p.rr.contratos?p.rr.valor/p.rr.contratos:0)}</div><div class="note">média ${fmtBRL0(p.ce?p.rr.valor/p.ce:0)} por vendedor com envio · ${p.rr.enviaram}/${p.l.length} na ${p.rr.ref.rotulo}</div><div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${r.valor?Math.round(p.rr.valor/r.valor*100):0}%"></div></div><div class="note">${r.valor?Math.round(p.rr.valor/r.valor*100):0}% do total do dia</div></div>`).join('')}</div>
     </section>
   </div>
   <div class="grid2">
@@ -754,7 +788,27 @@ function viewGerencia(){
   </div>
   `;
 }
+function reporteTexto(n){
+  const E=S.__entregas; if(!E) return ''; const {entregas,dia,lista}=E; const eHoje=dia===hoje(); const nowMin=new Date().getHours()*60+new Date().getMinutes();
+  let x = n==='atual' ? [...entregas].reverse().find(e=>e.p.n>0) || entregas[0] : entregas[n-1];
+  const linhas=[];
+  linhas.push(`*PRÉVIA DE PAGAMENTOS · ${brDate(dia)} (${diaSemana(dia)})*`);
+  linhas.push(`${x.s.rotulo} · ${x.encerrada?'fechada às '+x.s.limite:'parcial, '+hm(new Date())}`);
+  linhas.push('');
+  linhas.push(`*Acumulado do dia: ${fmtBRL(x.acum.v)}*`);
+  linhas.push(`Contratos: ${x.acum.c} · Seguros: ${x.acum.sg}`);
+  linhas.push(`Neste período: ${fmtBRL(x.p.v)} (${x.p.c} contratos)`);
+  linhas.push(`Próprios: ${fmtBRL(x.porTipoAcum[0].v)} (${x.porTipoAcum[0].c} contr.) · Corban: ${fmtBRL(x.porTipoAcum[1].v)} (${x.porTipoAcum[1].c} contr.)`);
+  linhas.push(`Enviaram: ${x.p.n}/${lista.length}`);
+  const evol=entregas.filter(e=>e.s.n<=x.s.n).map(e=>`${e.s.n}ª ${e.s.limite} ${fmtBRL0(e.acum.v)}`).join(' → ');
+  linhas.push(`Evolução: ${evol}`);
+  if(x.ont.v){ const pct=Math.round((x.acum.v/x.ont.v-1)*100); linhas.push(`Ontem no mesmo horário: ${fmtBRL0(x.ont.v)} (${pct>=0?'+':''}${pct}%)`); }
+  if(x.med) linhas.push(`Média dos últimos dias neste horário: ${fmtBRL0(x.med)}`);
+  const faltam=lista.filter(u=>!envioDe(u.id,dia,x.s.n)); if(faltam.length&&faltam.length<=8) linhas.push(`Sem envio na ${x.s.rotulo}: ${faltam.map(u=>u.nome).join(', ')}`); else if(faltam.length) linhas.push(`Sem envio na ${x.s.rotulo}: ${faltam.length} vendedores`);
+  return linhas.join('\n');
+}
 function bindGerencia(){
+  document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=async()=>{ const t=reporteTexto(b.dataset.rep==='atual'?'atual':Number(b.dataset.rep)); try{ await navigator.clipboard.writeText(t); toast('Reporte copiado. Cole no WhatsApp ou e-mail.'); }catch(e){ prompt('Copie o texto:',t); } });
   document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
   document.querySelectorAll('#cd [data-n]').forEach(b=>b.onclick=()=>{ S.chartDias=Number(b.dataset.n); render(); });
   document.getElementById('vendSel').onchange=e=>{ S.vendSel=e.target.value||null; render(); };
