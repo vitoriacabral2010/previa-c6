@@ -295,6 +295,12 @@ html,body{max-width:100%;overflow-x:hidden}
 .ent-cmp{font-size:13px;font-weight:600;padding:6px 0} .ent-cmp.up{color:var(--pos)} .ent-cmp.down{color:var(--bad)}
 .ent-total{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--ink);color:var(--bg)} .ent-total b{font-family:var(--display);font-size:24px;font-variant-numeric:tabular-nums} .ent-total .muted{color:var(--bg);opacity:.8}
 @media(max-width:640px){.ent-v{font-size:24px}.ent-total b{font-size:20px}}
+/* seletor de dia/mês */
+.dnav{display:inline-flex;align-items:center;gap:4px;position:relative}
+.dnav .dlabel{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 12px;font-weight:600;font-size:14px;white-space:nowrap}
+.dnav .dlabel::first-letter{text-transform:uppercase}
+.dnav .dlabel:hover{border-color:var(--ink)}
+.dnav .dpick{position:absolute;left:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none}
 </style>
 
 <div id="app"></div>
@@ -313,8 +319,8 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.21';
-const KEY = 'previa_c6_v2';
+const APP_VERSION = 'v2026-09-04.22';
+const KEY = 'previa_c6_v3';
 
 const Store = {
   load(){ try{ const s = localStorage.getItem(KEY); if(s) return JSON.parse(s);}catch(e){} return null; },
@@ -408,6 +414,8 @@ let DB = Store.load() || seed();
 (function(){ { const j=DB.users.find(u=>u.login==='julio'); if(j){ j.login='julio.cesar'; salvar(); } } if(!DB.users.some(u=>u.login==='julio.cesar')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
 // perfis: Vitória = admin que envia prévia; chefe = admin; Carlos = coordenador
 (function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } { const ch=DB.users.find(u=>u.login==='chefe'); if(ch){ ch.login='douglas.inacio'; ch.nome='Douglas Inácio'; ch.senha='teste'; ch.senhaOk=true; ch.papel='gerente'; m=true; } } { if(!DB.users.some(u=>u.login==='teste')){ DB.users.push({ id:'t0', nome:'Usuário Teste', login:'teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } } { const t=DB.users.find(u=>u.login==='teste.teste'); if(!t){ DB.users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } else if(t.senha!=='teste'&&!t.senhaOk){ t.senha='teste'; m=true; } } if(!DB.users.some(u=>u.login==='douglas.inacio')){ DB.users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', senhaOk:true, tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
+// migração v2 → v3: dados de exemplo regenerados iguais em todo aparelho; contas reais (e envios de hoje delas) preservados
+try{ const v2=JSON.parse(localStorage.getItem('previa_c6_v2')||'null'); if(v2&&v2.users){ let add=0; for(const u of v2.users){ if(/^u[0-9]+$/.test(u.id)) continue; const ja=DB.users.find(x=>x.login===u.login); if(ja){ if(u.senhaOk){ ja.senha=u.senha; ja.senhaOk=true; } } else { DB.users.push(u); add++; } } const reais=new Set(DB.users.filter(u=>!/^u[0-9]+$/.test(u.id)).map(u=>u.id)); for(const e of (v2.envios||[])){ if(reais.has(e.userId)&&e.data===hoje()&&!DB.envios.some(x=>x.userId===e.userId&&x.data===e.data&&x.previa===e.previa)) DB.envios.push(e); } salvar(); localStorage.removeItem('previa_c6_v2'); } }catch(e){}
 // migração: usuários criados na versão anterior (previa_c6_v1) são preservados
 try{ const v1=JSON.parse(localStorage.getItem('previa_c6_v1')||'null'); if(v1&&v1.users){ let add=0; for(const u of v1.users){ if(!DB.users.some(x=>x.login===u.login)){ DB.users.push(u); add++; } } if(add){ salvar(); } localStorage.removeItem('previa_c6_v1'); } }catch(e){}
 const S = { user:null, tab:'enviar', dia:hoje(), mes:hoje().slice(0,7), vendSel:null, filtro:'todos', busca:'', previa:null, chartDias:10 };
@@ -629,6 +637,15 @@ function bindEnviar(){
   v.addEventListener('input',mascara);
 }
 
+/* ----- seletor de dia / mês sempre em português (o calendário nativo segue o idioma do celular) ----- */
+function diaUtilMais(iso, n){ const d=new Date(iso+'T12:00:00'); let k=Math.abs(n); while(k>0){ d.setDate(d.getDate()+(n>0?1:-1)); if(d.getDay()!==0&&d.getDay()!==6) k--; } return isoDate(d); }
+function dateNav(id, v){ return `<div class="dnav" id="${id}"><button type="button" class="btn sm ghost" data-dn="-1" title="dia útil anterior">‹</button><button type="button" class="dlabel" data-dn="pick" title="escolher no calendário">${diaSemana(v)} · ${brDate(v)}</button><button type="button" class="btn sm ghost" data-dn="1" title="próximo dia útil" ${v>=hoje()?'disabled':''}>›</button><button type="button" class="btn sm ghost" data-dn="hoje" ${v===hoje()?'disabled':''}>hoje</button><input type="date" class="dpick" max="${hoje()}" value="${v}" tabindex="-1" aria-hidden="true"></div>`; }
+function bindDateNav(id, cb){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.dpick'); el.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{ const a=b.dataset.dn; if(a==='pick'){ try{ inp.showPicker(); }catch(e){ inp.click(); } return; } if(a==='hoje') return cb(hoje()); let v=diaUtilMais(inp.value||hoje(), Number(a)); if(v>hoje()) v=hoje(); cb(v); }); inp.onchange=()=>{ if(inp.value) cb(inp.value>hoje()?hoje():inp.value); }; }
+function mesNome(ym){ const [Y,M]=ym.split('-').map(Number); return new Date(Y,M-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}); }
+function mesMais(ym,n){ const [Y,M]=ym.split('-').map(Number); const d=new Date(Y,M-1+n,1); return `${d.getFullYear()}-${pad(d.getMonth()+1)}`; }
+function monthNav(id, v){ const max=hoje().slice(0,7); return `<div class="dnav" id="${id}"><button type="button" class="btn sm ghost" data-mn="-1">‹</button><button type="button" class="dlabel" data-mn="pick">${mesNome(v)}</button><button type="button" class="btn sm ghost" data-mn="1" ${v>=max?'disabled':''}>›</button><input type="month" class="dpick" max="${max}" value="${v}" tabindex="-1" aria-hidden="true"></div>`; }
+function bindMonthNav(id, cb){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.dpick'); const max=hoje().slice(0,7); el.querySelectorAll('[data-mn]').forEach(b=>b.onclick=()=>{ const a=b.dataset.mn; if(a==='pick'){ try{ inp.showPicker(); }catch(e){ inp.click(); } return; } let v=mesMais(inp.value||max, Number(a)); if(v>max) v=max; cb(v); }); inp.onchange=()=>{ if(inp.value) cb(inp.value>max?max:inp.value); }; }
+
 /* ----- painel geral ----- */
 function listaFiltrada(){
   let l=vendedores(); if(S.filtro!=='todos') l=l.filter(u=>u.tipo===S.filtro);
@@ -645,7 +662,7 @@ function viewPainel(){
   const eHoje=dia===hoje();
   const porSlot=SLOTS.map(s=>{ let v=0,c=0,sg=0,n=0; for(const u of lista){ const e=envioDe(u.id,dia,s.n); if(e){v+=e.valor;c+=e.contratos;sg+=e.seguros;n++;} } return {v,c,sg,n}; });
   return `<div class="toolbar">
-      <input type="date" id="dia" value="${dia}" max="${hoje()}">
+      ${dateNav('dia',dia)}
       <div class="seg" id="filtro">${[['todos','Todos'],['interno','Próprios'],['pj','Corban']].map(([k,l])=>`<button class="${S.filtro===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>
       <input type="search" id="busca" placeholder="Buscar vendedor" value="${esc(S.busca)}">
       <div class="spacer" style="flex:1"></div>
@@ -692,7 +709,7 @@ function textoWhats(dia, lista){
     linhas.map(({u,e})=>e?`${u.nome}: ${fmtBRL(e.valor)} · ${e.contratos}c · ${e.seguros}s (${e.hora}${e.atrasado?' ⚠':''})`:`${u.nome}: — não enviou`).join('\n');
 }
 function bindPainel(){
-  document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
+  bindDateNav('dia', v=>{ S.dia=v; render(); });
   document.querySelectorAll('#filtro [data-f]').forEach(b=>b.onclick=()=>{ S.filtro=b.dataset.f; render(); });
   const bs=document.getElementById('busca'); bs.oninput=()=>{ S.busca=bs.value; const pos=bs.selectionStart; render(); const nb=document.getElementById('busca'); nb.focus(); nb.setSelectionRange(pos,pos); };
   document.getElementById('copiarWa').onclick=async()=>{ const t=textoWhats(S.dia,listaFiltrada()); try{ await navigator.clipboard.writeText(t); toast('Resumo copiado. Cole no grupo do WhatsApp.'); }catch(e){ prompt('Copie o texto:',t); } };
@@ -733,7 +750,7 @@ function viewGerencia(){
       <text class="lbl" x="${x0+w/2}" y="${H-8}" text-anchor="middle">${brShort(x.d)}${x.d===hoje()?' •':''}</text>`; }).join('')}
   </svg>`;
   const tipoLbl=t=>t==='pj'?'Corban':'Próprios';
-  return `<div class="toolbar"><input type="date" id="dia" value="${dia}" max="${hoje()}"><div class="seg" id="cd">${[5,10,13].map(n=>`<button class="${S.chartDias===n?'on':''}" data-n="${n}">${n} dias</button>`).join('')}</div><span class="note">${eHoje?'Hoje, em andamento':'Dia fechado'} · ${comEnvio} de ${lista.length} com envio</span></div>
+  return `<div class="toolbar">${dateNav('dia',dia)}<div class="seg" id="cd">${[5,10,13].map(n=>`<button class="${S.chartDias===n?'on':''}" data-n="${n}">${n} dias</button>`).join('')}</div><span class="note">${eHoje?'Hoje, em andamento':'Dia fechado'} · ${comEnvio} de ${lista.length} com envio</span></div>
   <div class="kpis">
     <div class="kpi accent"><div class="eyebrow">Total produzido · ${brShort(dia)}</div><div class="v">${fmtBRL(r.valor)}</div><div class="s">${media?`${r.valor>=media?'▲':'▼'} ${Math.abs(Math.round((r.valor/media-1)*100))}% vs média de ${fmtBRL0(media)} (${passados.length} dias)`:'sem histórico'}</div></div>
     <div class="kpi"><div class="eyebrow">Contratos</div><div class="v">${r.contratos}</div><div class="s">ticket médio ${fmtBRL0(ticket)}</div></div>
@@ -811,7 +828,7 @@ function reporteTexto(n){
 }
 function bindGerencia(){
   document.querySelectorAll('[data-rep]').forEach(b=>b.onclick=async()=>{ const t=reporteTexto(b.dataset.rep==='atual'?'atual':Number(b.dataset.rep)); try{ await navigator.clipboard.writeText(t); toast('Reporte copiado. Cole no WhatsApp ou e-mail.'); }catch(e){ prompt('Copie o texto:',t); } });
-  document.getElementById('dia').onchange=e=>{ S.dia=e.target.value||hoje(); render(); };
+  bindDateNav('dia', v=>{ S.dia=v; render(); });
   document.querySelectorAll('#cd [data-n]').forEach(b=>b.onclick=()=>{ S.chartDias=Number(b.dataset.n); render(); });
   document.getElementById('vendSel').onchange=e=>{ S.vendSel=e.target.value||null; render(); };
 }
@@ -908,7 +925,7 @@ function viewMes(){
       return `<rect class="bar-int" x="${x0}" y="${H-PB-h}" width="${w}" height="${h}" rx="2" ${futuro?'opacity=".15"':''}/>${l.tot.v&&D.linhas.length<=23?`<text class="vl" x="${x0+w/2}" y="${H-PB-h-4}" text-anchor="middle" style="font-size:9px">${Math.round(l.tot.v/1000)}k</text>`:''}<text class="lbl" x="${x0+w/2}" y="${H-8}" text-anchor="middle" style="font-size:9.5px">${l.dia.slice(8)}</text>`; }).join('')}
   </svg>`;
   return `<div class="toolbar">
-      <input type="month" id="mes" value="${ym}" max="${hj.slice(0,7)}" style="padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px">
+      ${monthNav('mes',ym)}
       <div class="seg" id="filtro">${[['todos','Todos'],['interno','Próprios'],['pj','Corban']].map(([k,l])=>`<button class="${S.filtro===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>
       <input type="search" id="busca" placeholder="Buscar vendedor" value="${esc(S.busca)}">
       <div class="spacer" style="flex:1"></div>
@@ -957,7 +974,7 @@ function csvMes(){
   return [l1.join(sep),...rows.map(r=>r.join(sep)),'',l2.join(sep),...rows2.map(r=>r.join(sep))].join('\n');
 }
 function bindMes(){
-  document.getElementById('mes').onchange=e=>{ S.mes=e.target.value||hoje().slice(0,7); render(); };
+  bindMonthNav('mes', v=>{ S.mes=v; render(); });
   document.querySelectorAll('#filtro [data-f]').forEach(b=>b.onclick=()=>{ S.filtro=b.dataset.f; render(); });
   const bs=document.getElementById('busca'); bs.oninput=()=>{ S.busca=bs.value; const pos=bs.selectionStart; render(); const nb=document.getElementById('busca'); nb.focus(); nb.setSelectionRange(pos,pos); };
   document.getElementById('copiarCsv').onclick=async()=>{ const t=csvMes(); try{ await navigator.clipboard.writeText(t); toast('Planilha copiada. Cole no Excel ou no Google Planilhas.'); }catch(e){ prompt('Copie o texto:',t); } };
@@ -965,6 +982,8 @@ function bindMes(){
 
 render();
 // atualização automática: confere a versão publicada e recarrega se mudou (evita ficar com cópia velha no celular)
-(async function(){ try{ if(location.protocol==='file:') return; const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}); const t=await r.text(); const m=t.match(/APP_VERSION = '([^']+)'/); if(m&&m[1]!==APP_VERSION){ toast('Nova versão disponível, atualizando…'); setTimeout(()=>location.reload(),900); } }catch(e){} })();
+async function checarVersao(){ try{ if(location.protocol==='file:') return; const r=await fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}); const t=await r.text(); const m=t.match(/APP_VERSION = '([^']+)'/); if(m&&m[1]!==APP_VERSION){ toast('Nova versão disponível, atualizando…'); setTimeout(()=>location.reload(),900); } }catch(e){} }
+checkarVersaoInit();
+function checkarVersaoInit(){ checarVersao(); setInterval(checarVersao, 60000); document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') checarVersao(); }); }
 setInterval(()=>{ if(S.user && document.visibilityState==='visible') { const st=document.querySelector('.top .status span:last-child'); if(st){ const s=slotAtual(new Date()); st.textContent = s.encerrado?'Prévias de hoje encerradas':`${s.slot.rotulo} · até ${s.slot.limite} · faltam ${fmtFalta(s.falta)}`; } } }, 30000);
 </script>
