@@ -319,7 +319,7 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.22';
+const APP_VERSION = 'v2026-09-04.23';
 const KEY = 'previa_c6_v3';
 
 const Store = {
@@ -366,7 +366,6 @@ function seed(){
   const users = [];
   NOMES_INT.forEach((n,i)=>users.push({ id:'u'+(i+1), nome:n, login:loginDe(n), senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }));
   NOMES_PJ.forEach((n,i)=>users.push({ id:'u'+(i+16), nome:n, login:loginDe(n), senha:'1234', tipo:'pj', papel:'vendedor', ativo:true }));
-  users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
   users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'gerente', vende:true, ativo:true });
   users.push({ id:'t0', nome:'Usuário Teste', login:'teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true });
   users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true });
@@ -411,7 +410,7 @@ function seed(){
 /* ---------- estado ---------- */
 let DB = Store.load() || seed();
 // garantia da demonstração: a Vitória sempre existe (usuário vitoria.ferreira, senha 1234)
-(function(){ { const j=DB.users.find(u=>u.login==='julio'); if(j){ j.login='julio.cesar'; salvar(); } } if(!DB.users.some(u=>u.login==='julio.cesar')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
+(function(){ { const antes=DB.users.length; DB.users=DB.users.filter(u=>u.login!=='julio'&&u.login!=='julio.cesar'&&u.id!=='j1'); if(DB.users.length!==antes){ DB.envios=DB.envios.filter(e=>e.userId!=='j1'); salvar(); } } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
 // perfis: Vitória = admin que envia prévia; chefe = admin; Carlos = coordenador
 (function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } { const ch=DB.users.find(u=>u.login==='chefe'); if(ch){ ch.login='douglas.inacio'; ch.nome='Douglas Inácio'; ch.senha='teste'; ch.senhaOk=true; ch.papel='gerente'; m=true; } } { if(!DB.users.some(u=>u.login==='teste')){ DB.users.push({ id:'t0', nome:'Usuário Teste', login:'teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } } { const t=DB.users.find(u=>u.login==='teste.teste'); if(!t){ DB.users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } else if(t.senha!=='teste'&&!t.senhaOk){ t.senha='teste'; m=true; } } if(!DB.users.some(u=>u.login==='douglas.inacio')){ DB.users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', senhaOk:true, tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
 // migração v2 → v3: dados de exemplo regenerados iguais em todo aparelho; contas reais (e envios de hoje delas) preservados
@@ -492,7 +491,7 @@ function viewLogin(){
       <button class="btn ghost block" type="button" id="irEntrar">Já tenho usuário · entrar</button>
     </div>
     <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b> (Douglas, teste e teste.teste: <b>teste</b>). Toque para entrar como:</div>
-      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="julio.cesar" style="border-color:var(--ink);font-weight:600">Julio (admin)</button><button type="button" class="chip" data-quick="douglas.inacio" data-pw="teste">Douglas Inácio (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
+      <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="douglas.inacio" data-pw="teste">Douglas Inácio (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
       <div class="faint">43 vendedores cadastrados · 15 próprios · 28 Corban</div></div>
   </form></div>`;
 }
@@ -501,7 +500,6 @@ function acharUsuario(txt){
   const k=normLogin(txt); if(!k) return null;
   const porLogin=DB.users.find(u=>normLogin(u.login)===k); if(porLogin) return porLogin;
   const porNome=DB.users.find(u=>chave(u.nome)===chave(txt)||normLogin(u.nome)===k); if(porNome) return porNome;
-  if(k==='julio') return DB.users.find(u=>u.login==='julio.cesar')||null;
   const primeiro=DB.users.filter(u=>normLogin(u.nome).split('.')[0]===k.split('.')[0]&&k.split('.').length===1); return primeiro.length===1?primeiro[0]:null;
 }
 function logar(u){ S.user=u; Store.setSession(u.id); S.tab = abasDe(u)[0][0]; render(); }
