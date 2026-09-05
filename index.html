@@ -313,7 +313,7 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.19';
+const APP_VERSION = 'v2026-09-04.20';
 const KEY = 'previa_c6_v2';
 
 const Store = {
@@ -362,6 +362,7 @@ function seed(){
   NOMES_PJ.forEach((n,i)=>users.push({ id:'u'+(i+16), nome:n, login:loginDe(n), senha:'1234', tipo:'pj', papel:'vendedor', ativo:true }));
   users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true });
   users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'gerente', vende:true, ativo:true });
+  users.push({ id:'t0', nome:'Usuário Teste', login:'teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true });
   users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true });
   users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', tipo:'interno', papel:'gerente', vende:false, ativo:true });
   users.push({ id:'g1', nome:'Carlos Henrique', login:'gerente', senha:'1234', tipo:'interno', papel:'coordenador', vende:false, ativo:true });
@@ -406,7 +407,7 @@ let DB = Store.load() || seed();
 // garantia da demonstração: a Vitória sempre existe (usuário vitoria.ferreira, senha 1234)
 (function(){ { const j=DB.users.find(u=>u.login==='julio'); if(j){ j.login='julio.cesar'; salvar(); } } if(!DB.users.some(u=>u.login==='julio.cesar')){ DB.users.push({ id:'j1', nome:'Julio Cesar', login:'julio.cesar', senha:'1234', tipo:'interno', papel:'gerente', ativo:true }); salvar(); } let v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(!v){ DB.users.push({ id:'v1', nome:'Vitória Ferreira', login:'vitoria.ferreira', senha:'1234', tipo:'interno', papel:'vendedor', ativo:true }); salvar(); } else if(!v.senhaOk){ v.senha='1234'; v.senhaOk=true; v.ativo=true; salvar(); } })();
 // perfis: Vitória = admin que envia prévia; chefe = admin; Carlos = coordenador
-(function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } { const ch=DB.users.find(u=>u.login==='chefe'); if(ch){ ch.login='douglas.inacio'; ch.nome='Douglas Inácio'; ch.senha='teste'; ch.senhaOk=true; ch.papel='gerente'; m=true; } } { const t=DB.users.find(u=>u.login==='teste.teste'); if(!t){ DB.users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } else if(t.senha!=='teste'&&!t.senhaOk){ t.senha='teste'; m=true; } } if(!DB.users.some(u=>u.login==='douglas.inacio')){ DB.users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', senhaOk:true, tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
+(function(){ let m=false; const v=DB.users.find(u=>u.login==='vitoria.ferreira'); if(v&&(v.papel!=='gerente'||!v.vende)){ v.papel='gerente'; v.vende=true; m=true; } { const ch=DB.users.find(u=>u.login==='chefe'); if(ch){ ch.login='douglas.inacio'; ch.nome='Douglas Inácio'; ch.senha='teste'; ch.senhaOk=true; ch.papel='gerente'; m=true; } } { if(!DB.users.some(u=>u.login==='teste')){ DB.users.push({ id:'t0', nome:'Usuário Teste', login:'teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } } { const t=DB.users.find(u=>u.login==='teste.teste'); if(!t){ DB.users.push({ id:'t1', nome:'Teste Teste', login:'teste.teste', senha:'teste', senhaOk:true, tipo:'interno', papel:'vendedor', ativo:true }); m=true; } else if(t.senha!=='teste'&&!t.senhaOk){ t.senha='teste'; m=true; } } if(!DB.users.some(u=>u.login==='douglas.inacio')){ DB.users.push({ id:'c1', nome:'Douglas Inácio', login:'douglas.inacio', senha:'teste', senhaOk:true, tipo:'interno', papel:'gerente', vende:false, ativo:true }); m=true; } const c=DB.users.find(u=>u.login==='gerente'); if(c&&c.papel==='gerente'&&!c.coordOk){ c.papel='coordenador'; c.vende=false; c.coordOk=true; m=true; } if(m) salvar(); })();
 // migração: usuários criados na versão anterior (previa_c6_v1) são preservados
 try{ const v1=JSON.parse(localStorage.getItem('previa_c6_v1')||'null'); if(v1&&v1.users){ let add=0; for(const u of v1.users){ if(!DB.users.some(x=>x.login===u.login)){ DB.users.push(u); add++; } } if(add){ salvar(); } localStorage.removeItem('previa_c6_v1'); } }catch(e){}
 const S = { user:null, tab:'enviar', dia:hoje(), mes:hoje().slice(0,7), vendSel:null, filtro:'todos', busca:'', previa:null, chartDias:10 };
@@ -482,7 +483,7 @@ function viewLogin(){
       <button class="btn primary block" type="button" id="criar">Criar usuário e entrar</button>
       <button class="btn ghost block" type="button" id="irEntrar">Já tenho usuário · entrar</button>
     </div>
-    <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b> (Douglas e teste.teste: <b>teste</b>). Toque para entrar como:</div>
+    <div class="demo-hint"><div><b>Demonstração</b> · senha de todos: <b>1234</b> (Douglas, teste e teste.teste: <b>teste</b>). Toque para entrar como:</div>
       <div class="chips"><button type="button" class="chip" data-quick="vitoria.ferreira" style="border-color:var(--ink);font-weight:600">Vitória Ferreira (admin · vende)</button><button type="button" class="chip" data-quick="julio.cesar" style="border-color:var(--ink);font-weight:600">Julio (admin)</button><button type="button" class="chip" data-quick="douglas.inacio" data-pw="teste">Douglas Inácio (admin)</button><button type="button" class="chip" data-quick="ana.souza">Ana Souza (própria)</button><button type="button" class="chip" data-quick="rafael.teixeira">Rafael Teixeira (Corban)</button><button type="button" class="chip" data-quick="gerente">Carlos Henrique (coordenador)</button></div>
       <div class="faint">43 vendedores cadastrados · 15 próprios · 28 Corban</div></div>
   </form></div>`;
