@@ -313,7 +313,7 @@ const SLOTS = [
   { n:2, rotulo:'2ª prévia', limite:'14:40' },
   { n:3, rotulo:'3ª prévia', limite:'17:10' },
 ];
-const APP_VERSION = 'v2026-09-04.20';
+const APP_VERSION = 'v2026-09-04.21';
 const KEY = 'previa_c6_v2';
 
 const Store = {
@@ -852,6 +852,7 @@ function viewAcessos(){
       <div class="err hide" id="uErr" style="margin-top:8px"></div>
     </section>
     <section class="card">
+      <div class="card" style="margin-bottom:0;border-style:dashed"><div class="card-h"><div><h2>Zerar demonstração</h2><p class="note">Apaga os 43 vendedores fictícios e todo o histórico de exemplo. Ficam só os usuários reais (admins, coordenadores e quem foi criado por vocês). Use quando for passar pro time.</p></div><button type="button" class="btn sm ghost" id="zerarDemo" style="border-color:var(--bad);color:var(--bad)">🧹 Zerar dados de demonstração</button></div></div>
       <div class="card-h"><div><h2>Usuários e permissões</h2><p class="note">Perfil, tipo, quem envia prévia, bloqueio e senha. As mudanças valem na hora.</p></div><input type="search" id="buscaU" placeholder="Buscar usuário" value="${esc(S.buscaU||'')}" style="padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);font-size:14px"></div>
       <div class="ulist">${lista.map(u=>`<div class="urow ${u.ativo===false?'dim':''} ${u.id===S.user.id?'me':''}">
         <div class="uinfo"><b>${esc(u.nome)}</b><span class="muted">${esc(u.login)}</span><span class="chips"><span class="pill ${u.papel==='gerente'?'int':'neutral'}">${papelLbl(u)}</span><span class="pill ${u.tipo}">${u.tipo==='pj'?'Corban':'Próprio'}</span>${u.ativo===false?'<span class="pill miss">bloqueado</span>':''}${u.id===S.user.id?'<span class="pill ok">você</span>':''}</span></div>
@@ -861,6 +862,7 @@ function viewAcessos(){
 }
 function bindAcessos(){
   const $=id=>document.getElementById(id);
+  $('zerarDemo').onclick=()=>{ const fict=DB.users.filter(u=>/^u[0-9]+$/.test(u.id)); if(!confirm(`Apagar ${fict.length} vendedores fictícios e todos os envios de exemplo? Os usuários reais continuam. Não dá pra desfazer.`)) return; const ids=new Set(fict.map(u=>u.id)); DB.users=DB.users.filter(u=>!ids.has(u.id)); DB.envios=DB.envios.filter(e=>!ids.has(e.userId)&&e.data>=hoje()); DB.demoZerada=true; salvar(); toast('Demonstração zerada. O sistema está limpo para o time.'); render(); };
   const bs=$('buscaU'); bs.oninput=()=>{ S.buscaU=bs.value; const pos=bs.selectionStart; render(); const nb=$('buscaU'); nb.focus(); nb.setSelectionRange(pos,pos); };
   $('uNome').addEventListener('input',()=>{ if(!$('uLogin').dataset.tocado) $('uLogin').value=normLogin($('uNome').value.trim().split(/\s+/).filter(Boolean).filter((p,i,a)=>i===0||i===a.length-1).join('.')); });
   $('uLogin').addEventListener('input',()=>{ $('uLogin').dataset.tocado='1'; });
